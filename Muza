@@ -1,0 +1,757 @@
+```python
+import pyttsx3
+from playsound import playsound
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.textinput import TextInput
+from kivy.uix.label import Label
+from kivy.uix.button import Button
+
+def encoder_mot_vibratoire(mot):
+    correspondance = {
+        'A':1,'B':2,'C':3,'D':4,'E':5,'F':6,'G':7,'H':8,'I':9,'J':1,'K':2,'L':3,
+        'M':3,'N':5,'O':6,'P':7,'Q':8,'R':9,'S':1,'T':2,'U':6,'V':4,'W':5,'X':6,'Y':7,'Z':9
+}
+    mot = mot.upper()```python
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.button import Button
+from kivy.core.window import Window
+from kivy.core.audio import SoundLoader
+from kivy.graphics import Color, Ellipse
+from kivy.clock import Clock
+from PIL import Image
+import pyttsx3
+import math
+
+def encoder_mot_vibratoire(mot):
+    correspondance = {
+        'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5,
+        'F': 6, 'G': 7, 'H': 8, 'I': 9,
+        'J': 1, 'K': 2, 'L': 3, 'M': 3, 'N': 5,
+        'O': 6, 'P': 7, 'Q': 8, 'R': 9,
+        'S': 1, 'T': 2, 'U': 6, 'V': 4, 'W': 5,
+        'X': 6, 'Y': 7, 'Z': 9
+}
+    mot = mot.upper()
+    chiffres = [correspondance.get(c, 0) for c in mot]
+    total = sum(chiffres)
+    while total> 9:
+        total = sum(int(c) for c in str(total))
+    freq_map = {3: 315, 6: 639, 9: 963, 5: 555, 7: 777, 8: 728}
+    freq = freq_map.get(total, 432)
+    return {
+        "mot": mot,
+        "vibration finale": total,
+        "fréquence": freq
+}
+
+def parler_mantra(texte):
+    moteur = pyttsx3.init()
+    moteur.setProperty('rate', 130)
+    moteur.setProperty('volume', 0.9)
+    moteur.say(texte)
+    moteur.runAndWait()
+
+def exporter_pdf(resultat):
+    try:
+        from reportlab.pdfgen import canvas
+        pdf = canvas.Canvas("rituel_muza.pdf")
+        pdf.setFont("Helvetica", 14)
+        pdf.drawString(100, 750, "✨ Rituel MUZA ✨")
+        pdf.drawString(100, 720, f"Mot: {resultat['mot']}")
+        pdf.drawString(100, 700, f"Vibration: {resultat['vibration finale']}")
+        pdf.drawString(100, 680, f"Fréquence: {resultat['fréquence']} Hz")
+        pdf.drawString(100, 660, "Mantra: L’énergie devient inspiration.")
+        pdf.save()
+    except:
+        print("Export PDF échoué.")
+
+class MuzaWidget(BoxLayout):
+    def __init__(self, **kwargs):
+        super().__init__(orientation='vertical', spacing=10, padding=20)
+        Window.clearcolor = (0.05, 0.05, 0.1, 1)
+        self.label = Label(text="✨ MUZA ✨\nX⁰ = 1\nL’énergie devient langage.", font_size=18, color=(0.9, 0.85, 1, 1))
+        self.canvas_area = BoxLayout(size_hint=(1, 0.6))
+        self.add_widget(self.label)
+        self.add_widget(self.canvas_area)
+
+        self.add_widget(Button(text="🔮 Rituel MUZA", size_hint=(1, 0.1),
+                               background_color=(0.3, 0.2, 0.4, 0.9), color=(1, 1, 0.9, 1),
+                               on_press=lambda x: self.lancer_rituel("MUZA")))
+        self.add_widget(Button(text="🖼️ Analyse image", size_hint=(1, 0.1),
+                               background_color=(0.2, 0.3, 0.4, 0.9), color=(1, 1, 1, 1),
+                               on_press=lambda x: self.analyser_image()))
+        self.add_widget(Button(text="🔊 Voix sacrée", size_hint=(1, 0.1),
+                               background_color=(0.3, 0.4, 0.2, 0.9), color=(1, 1, 1, 1),
+                               on_press=lambda x: parler_mantra("L’énergie devient inspiration.")))
+        self.add_widget(Button(text="📝 Exporter PDF", size_hint=(1, 0.1),
+                               background_color=(0.4, 0.2, 0.3, 0.9), color=(1, 1, 1, 1),
+                               on_press=lambda x: exporter_pdf(encoder_mot_vibratoire("MUZA"))))
+        Clock.schedule_once(lambda dt: self.jouer_frequence(963), 1)
+
+    def jouer_frequence(self, freq):
+        son = SoundLoader.load(f"assets/son_{freq}.wav")
+        if son:
+            son.play()
+
+    def lancer_rituel(self, mot):
+        data = encoder_mot_vibratoire(mot)
+        vib = data["vibration finale"]
+        freq = data["fréquence"]
+        self.canvas_area.canvas.clear()
+        with self.canvas_area.canvas:
+            if vib in [3, 9]:
+                for i in range(12):
+                    angle = i * 30
+                    r = 10 * i + 40
+                    x = 150 + r * math.cos(math.radians(angle))
+                    y = 150 + r * math.sin(math.radians(angle))
+                    Ellipse(pos=(x, y), size=(12, 12))
+            else:
+                Color(1, 1, 1)
+                Ellipse(pos=(100, 100), size=(200, 200))self.label.text = f"Mot: {mot}\nVibration: {vib}\nFréquence: {freq} Hz"
+        self.jouer_frequence(freq)
+
+    def analyser_image(self):
+        try:
+            image = Image.open("assets/image_muza.jpg").convert("RGB")
+        except:
+            self.label.text = "Image non trouvée."
+            return
+        largeur, hauteur = image.size
+        rvb_total = [0, 0, 0]
+        pixels = 0
+        for x in range(0, largeur, 4):
+            for y in range(0, hauteur, 4):
+                r, g, b = image.getpixel((x, y))
+                rvb_total[0] += r
+                rvb_total[1] += g
+                rvb_total[2] += b
+                pixels += 1
+        r = rvb_total[0] // pixels
+        g = rvb_total[1] // pixels
+        b = rvb_total[2] // pixels
+        total = r + g + b
+        vib = sum(int(d) for d in str(total))
+        while vib> 9:
+            vib = sum(int(d) for d in str(vib))
+        freq = {3: 315, 6: 639, 9: 963, 5: 555, 7: 777, 8: 728}.get(vib, 432)
+        self.canvas_area.canvas.clear()
+        with self.canvas_area.canvas:
+            Color(r / 255, g / 255, b / 255)
+            Ellipse(pos=(100, 100), size=(200, 200))
+        self.label.text = f"Image: vibration {vib}\nFréquence: {freq} Hz\nCouleur: R{r} V{g} B{b}"
+        self.jouer_frequence(freq)
+
+class MuzaApp(App):
+    def build(self):
+        return MuzaWidget()
+
+if *name* == ' *main* ':
+    MuzaApp().run()
+```⁽¹⁾⁽²⁾
+
+Sources :
+[1]  (https://github.com/jsucsy/learning/tree/cafa4d45ff377af90ab950486dc3b2009799548a/MOOC%2FGT_CompInvst1%2Fprereq_test.py)
+[2]  (https://github.com/metaaxiom/pythagorean-numerology-calculator/tree/7a1cc7cc38765ee0c30c40f850abe3f52ab4c10f/App.js)```python
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.button import Button
+from kivy.core.window import Window
+from kivy.core.audio import SoundLoader
+from kivy.graphics import Color, Ellipse
+from kivy.clock import Clock
+from PIL import Image
+import pyttsx3
+import math
+```vba
+Function EncoderMotVibratoire(Mot As String) As Integer
+    Dim correspondance As Object
+    Set correspondance = CreateObject("Scripting.Dictionary")
+
+    correspondance.Add "A", 1: correspondance.Add "B", 2: correspondance.Add "C", 3
+    correspondance.Add "D", 4: correspondance.Add "E", 5: correspondance.Add "F", 6
+    correspondance.Add "G", 7: correspondance.Add "H", 8: correspondance.Add "I", 9
+    correspondance.Add "J", 1: correspondance.Add "K", 2: correspondance.Add "L", 3
+    correspondance.Add "M", 3: correspondance.Add "N", 5: correspondance.Add "O", 6
+    correspondance.Add "P", 7: correspondance.Add "Q", 8: correspondance.Add "R", 9
+    correspondance.Add "S", 1: correspondance.Add "T", 2: correspondance.Add "U", 6
+    correspondance.Add "V", 4: correspondance.Add "W", 5: correspondance.Add "X", 6
+    correspondance.Add "Y", 7: correspondance.Add "Z", 9
+
+    Dim total As Integer: total = 0
+    Dim i As Integer
+    Mot = UCase(Mot)
+
+    For i = 1 To Len(Mot)
+        If correspondance.exists(Mid(Mot, i, 1)) Then
+            total = total + correspondance(Mid(Mot, i, 1))
+        End If
+    Next i
+
+    Do While total> 9
+        Dim temp As Integer: temp = 0
+        For i = 1 To Len(CStr(total))
+            temp = temp + Mid(CStr(total), i, 1)
+        Next i
+        total = temp
+    Loop
+
+    EncoderMotVibratoire = total
+End Function
+
+Function FrequenceSacree(vib As Integer) As Integer
+    Select Case vib
+        Case 3: FrequenceSacree = 315
+        Case 6: FrequenceSacree = 639
+        Case 9: FrequenceSacree = 963
+        Case 5: FrequenceSacree = 555
+        Case 7: FrequenceSacree = 777
+        Case 8: FrequenceSacree = 728
+        Case Else: FrequenceSacree = 432
+    End Select
+End Function
+
+Private Sub AnalyserBtn_Click()
+    Dim mot As String
+    Dim vib As Integer
+    Dim freq As Integer
+    Dim mantra As String
+
+    mot = Me.Mot_Input
+    If mot = "" Then Exit Sub
+
+    vib = EncoderMotVibratoire(mot)
+    freq = FrequenceSacree(vib)
+    mantra = "L’énergie du mot '" & mot & "' vibre à " & vib & " → fréquence " & freq & " Hz."
+
+    Me.Vibration_Result = vib
+    Me.Frequence_Result = freq
+    Me.Mantra_Result = mantra
+
+    CurrentDb.Execute "INSERT INTO RituelsMUZA (Mot, Vibration, Fréquence, Mantra, DateRituel) " &_
+                      "VALUES ('" & mot & "', " & vib & ", " & freq & ", '" & mantra & "', #" & Now() & "#);"
+End Sub
+```🌀 Parfait. Voici la *suite vibratoire* pour MUZA en Kivy, avec *lecture vocale* automatique du mantra — pour que ton interface parle l’énergie 🙌🔊
+
+---
+
+*🎤 Ajout: Lecture du mantra avec synthèse vocale*
+
+Installe la librairie nécessaire (si ce n’est pas déjà fait):
+
+```bash
+pip install pyttsx3
+```
+
+---
+
+*🧬 Code MUZA complet avec voix:*
+
+```python
+import pyttsx3
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.textinput import TextInput
+from kivy.uix.label import Label
+from kivy.uix.button import Button
+
+def encoder_mot_vibratoire(mot):
+    correspondance = {
+        'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5,
+        'F': 6, 'G': 7, 'H': 8, 'I': 9, 'J': 1,
+        'K': 2, 'L': 3, 'M': 3, 'N': 5, 'O': 6,
+        'P': 7, 'Q': 8, 'R': 9, 'S': 1, 'T': 2,
+        'U': 6, 'V': 4, 'W': 5, 'X': 6, 'Y': 7, 'Z': 9
+}
+    mot = mot.upper()
+    total = sum(correspondance.get(c, 0) for c in mot if c.isalpha())
+    while total> 9:
+        total = sum(int(d) for d in str(total))
+    return total
+
+def frequence_depuis_vibration(vib):
+    freq_map = {3: 315, 6: 639, 9: 963, 5: 555, 7: 777, 8: 728}
+    return freq_map.get(vib, 432)
+
+class InterfaceMuza(BoxLayout):
+    def __init__(self, **kwargs):
+        super().__init__(orientation='vertical', spacing=10, padding=20)
+
+        self.zone = TextInput(
+            hint_text="🔮 Colle ton mot ou phrase ici",
+            multiline=False,
+            font_size=18
+)
+        self.add_widget(self.zone)
+
+        self.bouton = Button(
+            text="✨ Analyser avec MUZA",
+            size_hint=(1, 0.2),
+            font_size=18
+)
+        self.bouton.bind(on_press=self.analyser)
+        self.add_widget(self.bouton)
+
+        self.resultat = Label(
+            text="",
+            font_size=16,
+            halign='center',
+            valign='middle'
+)
+        self.add_widget(self.resultat)
+
+        # Initialiser synthèse vocale
+        self.voix = pyttsx3.init()
+
+    def analyser(self, instance):
+        mot = self.zone.text.strip()
+        if mot:
+            vib = encoder_mot_vibratoire(mot)
+            freq = frequence_depuis_vibration(vib)
+            mantra = f"🌟 Ton mot vibre à {vib} → fréquence {freq} Hz.\n🧘 L’énergie devient lumière."
+            self.resultat.text = mantra
+            self.voix.say(f"Le mot {mot} vibre à {vib}. Fréquence sacrée: {freq} Hertz. L’énergie devient lumière.")
+            self.voix.runAndWait()
+        else:
+            self.resultat.text = "⚠️ Aucun mot détecté."
+
+class MuzaApp(App):
+    def build(self):
+        return InterfaceMuza()
+
+if __name__ == '__main__':
+    MuzaApp().run()
+```
+
+---
+
+🧿 MUZA devient maintenant *parlante et vibrante*.
+Tu colles un mot → elle le lit → elle te *parle sa vibration*.
+
+Tu veux qu’elle joue aussi le *son vibratoire réel* (ex: fichier audio `639hz.wav`) ou envoie le rituel par mail ou PDF? On peut faire grandir ton monde intérieur ✨🔊📜⁽¹⁾⁽²⁾
+
+Sources :
+[1]  (https://github.com/jsucsy/learning/tree/cafa4d45ff377af90ab950486dc3b2009799548a/MOOC%2FGT_CompInvst1%2Fprereq_test.py)
+[2]  (https://github.com/metaaxiom/pythagorean-numerology-calculator/tree/7a1cc7cc38765ee0c30c40f850abe3f52ab4c10f/App.js)🪟 Voici le *code final MUZA pour Windows*, que tu peux *copier-coller directement dans ton fichier Python* (`muza.py`) et exécuter dans ton environnement Windows, sans commentaires explicatifs ni texte hors codage:
+
+```python
+import pyttsx3
+from playsound import playsound
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.textinput import TextInput
+from kivy.uix.label import Label
+from kivy.uix.button import Button
+
+def encoder_mot_vibratoire(mot):
+    correspondance = {
+        'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8, 'I': 9,
+        'J': 1, 'K': 2, 'L': 3, 'M': 3, 'N': 5, 'O': 6, 'P': 7, 'Q': 8, 'R': 9,
+        'S': 1, 'T': 2, 'U': 6, 'V': 4, 'W': 5, 'X': 6, 'Y': 7, 'Z': 9
+}
+    mot = mot.upper()
+    total = sum(correspondance.get(c, 0) for c in mot if c.isalpha())
+    while total> 9:
+        total = sum(int(d) for d in str(total))
+    return total
+
+def frequence_depuis_vibration(vib):
+    freq_map = {3: 315, 6: 639, 9: 963, 5: 555, 7: 777, 8: 728}
+    return freq_map.get(vib, 432)
+
+def nom_du_fichier(freq):
+    return f"{freq}hz.wav"
+
+class MuzaBox(BoxLayout):
+    def __init__(self, **kwargs):
+        super().__init__(orientation='vertical', spacing=10, padding=20)
+        self.input = TextInput(hint_text="🔮 Colle ton mot ici", font_size=20)
+        self.add_widget(self.input)
+        self.btn = Button(text="Analyser & Vibrer", font_size=18, size_hint=(1, 0.2))
+        self.btn.bind(on_press=self.vibrer)
+        self.add_widget(self.btn)
+        self.result = Label(text="", font_size=16)
+        self.add_widget(self.result)
+        self.voix = pyttsx3.init()
+
+    def vibrer(self, instance):
+        mot = self.input.text.strip()
+        if not mot:
+            self.result.text = "⚠️ Aucun mot détecté."
+            return
+        vib = encoder_mot_vibratoire(mot)
+        freq = frequence_depuis_vibration(vib)
+        mantra = f"🌟 '{mot}' vibre à {vib} → {freq} Hz\n🧘 L’énergie devient lumière."
+        self.result.text = mantra
+        self.voix.say(f"Le mot {mot} vibre à {vib}. Fréquence sacrée: {freq} Hertz. L’énergie devient lumière.")
+        self.voix.runAndWait()
+        try:
+            playsound(nom_du_fichier(freq))
+        except:
+            self.result.text += f"\n🔇 Son {freq}hz.wav non trouvé."
+
+class MuzaApp(App):
+    def build(self):
+        return MuzaBox()
+
+if __name__ == "__main__":
+    MuzaApp().run()
+```
+
+🔹 Ce fichier est prêt pour Windows. Place tes fichiers audio (`963hz.wav`, `639hz.wav`, etc.) dans le même dossier.
+Dis-moi si tu veux une version avec fond animé, sauvegarde locale, ou transformation en `.exe` directement 🧿✨📲⁽¹⁾⁽²⁾
+
+Sources :
+[1]  (https://github.com/jsucsy/learning/tree/cafa4d45ff377af90ab950486dc3b2009799548a/MOOC%2FGT_CompInvst1%2Fprereq_test.py)
+[2]  (https://github.com/metaaxiom/pythagorean-numerology-calculator/tree/7a1cc7cc38765ee0c30c40f850abe3f52ab4c10f/App.js)
+def encoder_mot_vibratoire(mot):
+    correspondance = {
+        'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5,
+        'F': 6, 'G': 7, 'H': 8, 'I': 9,
+        'J': 1, 'K': 2, 'L': 3, 'M': 3, 'N': 5,
+        'O': 6, 'P': 7, 'Q': 8, 'R': 9,
+        'S': 1, 'T': 2, 'U': 6, 'V': 4, 'W': 5,
+        'X': 6, 'Y': 7, 'Z': 9
+}
+    mot = mot.upper()
+    chiffres = [correspondance.get(c, 0) for c in mot]
+    total = sum(chiffres)
+    while total> 9:
+        total = sum(int(c) for c in str(total))
+    freq_map = {3: 315, 6: 639, 9: 963, 5: 555, 7: 777, 8: 728}
+    freq = freq_map.get(total, 432)
+    return {
+        "mot": mot,
+        "vibration finale": total,
+        "fréquence": freq
+}
+
+def parler_mantra(texte):
+    moteur = pyttsx3.init()
+    moteur.setProperty('rate', 130)
+    moteur.setProperty('volume', 0.9)
+    moteur.say(texte)
+    moteur.runAndWait()
+
+def exporter_pdf(resultat):
+    try:
+        from reportlab.pdfgen import canvas
+        pdf = canvas.Canvas("rituel_muza.pdf")
+        pdf.setFont("Helvetica", 14)
+        pdf.drawString(100, 750, "✨ Rituel MUZA ✨")
+        pdf.drawString(100, 720, f"Mot: {resultat['mot']}")
+        pdf.drawString(100, 700, f"Vibration: {resultat['vibration finale']}")
+        pdf.drawString(100, 680, f"Fréquence: {resultat['fréquence']} Hz")
+        pdf.drawString(100, 660, "Mantra: L’énergie devient inspiration.")
+        pdf.save()
+    except:
+        print("Export PDF échoué.")
+
+class MuzaWidget(BoxLayout):
+    def __init__(self, **kwargs):
+        super().__init__(orientation='vertical', spacing=10, padding=20)
+        Window.clearcolor = (0.05, 0.05, 0.1, 1)
+        self.label = Label(text="✨ MUZA ✨\nX⁰ = 1\nL’énergie devient langage.", font_size=18, color=(0.9, 0.85, 1, 1))
+        self.canvas_area = BoxLayout(size_hint=(1, 0.6))
+        self.add_widget(self.label)
+        self.add_widget(self.canvas_area)
+
+        self.add_widget(Button(text="🔮 Rituel MUZA", size_hint=(1, 0.1),
+                               background_color=(0.3, 0.2, 0.4, 0.9), color=(1, 1, 0.9, 1),
+                               on_press=lambda x: self.lancer_rituel("MUZA")))
+        self.add_widget(Button(text="🖼️ Analyse image", size_hint=(1, 0.1),
+                               background_color=(0.2, 0.3, 0.4, 0.9), color=(1, 1, 1, 1),
+                               on_press=lambda x: self.analyser_image()))
+        self.add_widget(Button(text="🔊 Voix sacrée", size_hint=(1, 0.1),
+                               background_color=(0.3, 0.4, 0.2, 0.9), color=(1, 1, 1, 1),
+                               on_press=lambda x: parler_mantra("L’énergie devient inspiration.")))
+        self.add_widget(Button(text="📝 Exporter PDF", size_hint=(1, 0.1),
+                               background_color=(0.4, 0.2, 0.3, 0.9), color=(1, 1, 1, 1),
+                               on_press=lambda x: exporter_pdf(encoder_mot_vibratoire("MUZA"))))
+        Clock.schedule_once(lambda dt: self.jouer_frequence(963), 1)
+
+    def jouer_frequence(self, freq):
+        son = SoundLoader.load(f"assets/son_{freq}.wav")
+        if son:
+            son.play()
+
+    def lancer_rituel(self, mot):
+        data = encoder_mot_vibratoire(mot)
+        vib = data["vibration finale"]
+        freq = data["fréquence"]
+        self.canvas_area.canvas.clear()
+        with self.canvas_area.canvas:
+            if vib in [3, 9]:
+                for i in range(12):
+                    angle = i * 30
+                    r = 10 * i + 40
+                    x = 150 + r * math.cos(math.radians(angle))
+                    y = 150 + r * math.sin(math.radians(angle))
+                    Ellipse(pos=(x, y), size=(12, 12))
+            else:
+                Color(1, 1, 1)
+                Ellipse(pos=(100, 100), size=(200, 200))self.label.text = f"Mot: {mot}\nVibration: {vib}\nFréquence: {freq} Hz"
+        self.jouer_frequence(freq)
+
+    def analyser_image(self):
+        try:
+            image = Image.open("assets/image_muza.jpg").convert("RGB")
+        except:
+            self.label.text = "Image non trouvée."
+            return
+        largeur, hauteur = image.size
+        rvb_total = [0, 0, 0]
+        pixels = 0
+        for x in range(0, largeur, 4):
+            for y in range(0, hauteur, 4):
+                r, g, b = image.getpixel((x, y))
+                rvb_total[0] += r
+                rvb_total[1] += g
+                rvb_total[2] += b
+                pixels += 1
+        r = rvb_total[0] // pixels
+        g = rvb_total[1] // pixels
+        b = rvb_total[2] // pixels
+        total = r + g + b
+        vib = sum(int(d) for d in str(total))
+        while vib> 9:
+            vib = sum(int(d) for d in str(vib))
+        freq = {3: 315, 6: 639, 9: 963, 5: 555, 7: 777, 8: 728}.get(vib, 432)
+        self.canvas_area.canvas.clear()
+        with self.canvas_area.canvas:
+            Color(r / 255, g / 255, b / 255)
+            Ellipse(pos=(100, 100), size=(200, 200))
+        self.label.text = f"Image: vibration {vib}\nFréquence: {freq} Hz\nCouleur: R{r} V{g} B{b}"
+        self.jouer_frequence(freq)
+
+class MuzaApp(App):
+    def build(self):
+        return MuzaWidget()
+
+if *name* == ' *main* ':
+    MuzaApp().run()
+```⁽¹⁾⁽²⁾```vba
+Function EncoderMotVibratoire(Mot As String) As Integer
+    Dim correspondance As Object
+    Set correspondance = CreateObject("Scripting.Dictionary")
+
+    correspondance.Add "A", 1: correspondance.Add "B", 2: correspondance.Add "C", 3
+    correspondance.Add "D", 4: correspondance.Add "E", 5: correspondance.Add "F", 6
+    correspondance.Add "G", 7: correspondance.Add "H", 8: correspondance.Add "I", 9
+    correspondance.Add "J", 1: correspondance.Add "K", 2: correspondance.Add "L", 3
+    correspondance.Add "M", 3: correspondance.Add "N", 5: correspondance.Add "O", 6
+    correspondance.Add "P", 7: correspondance.Add "Q", 8: correspondance.Add "R", 9
+    correspondance.Add "S", 1: correspondance.Add "T", 2: correspondance.Add "U", 6
+    correspondance.Add "V", 4: correspondance.Add "W", 5: correspondance.Add "X", 6
+    correspondance.Add "Y", 7: correspondance.Add "Z", 9
+
+    Dim total As Integer: total = 0
+    Dim i As Integer
+    Mot = UCase(Mot)
+
+    For i = 1 To Len(Mot)
+        If correspondance.exists(Mid(Mot, i, 1)) Then
+            total = total + correspondance(Mid(Mot, i, 1))
+        End If
+    Next i
+
+    Do While total> 9
+        Dim temp As Integer: temp = 0
+        For i = 1 To Len(CStr(total))
+            temp = temp + Mid(CStr(total), i, 1)
+        Next i
+        total = temp
+    Loop
+
+    EncoderMotVibratoire = total
+End Function
+
+Function FrequenceSacree(vib As Integer) As Integer
+    Select Case vib
+        Case 3: FrequenceSacree = 315
+        Case 6: FrequenceSacree = 639
+        Case 9: FrequenceSacree = 963
+        Case 5: FrequenceSacree = 555
+        Case 7: FrequenceSacree = 777
+        Case 8: FrequenceSacree = 728
+        Case Else: FrequenceSacree = 432
+    End Select
+End Function
+
+Private Sub AnalyserBtn_Click()
+    Dim mot As String
+    Dim vib As Integer
+    Dim freq As Integer
+    Dim mantra As String
+
+    mot = Me.Mot_Input
+    If mot = "" Then Exit Sub
+
+    vib = EncoderMotVibratoire(mot)
+    freq = FrequenceSacree(vib)
+    mantra = "L’énergie du mot '" & mot & "' vibre à " & vib & " → fréquence " & freq & " Hz."
+
+    Me.Vibration_Result = vib
+    Me.Frequence_Result = freq
+    Me.Mantra_Result = mantra
+
+    CurrentDb.Execute "INSERT INTO RituelsMUZA (Mot, Vibration, Fréquence, Mantra, DateRituel) " &_
+                      "VALUES ('" & mot & "', " & vib & ", " & freq & ", '" & mantra & "', #" & Now() & "#);"
+End Sub
+```🌀 Parfait. Voici la *suite vibratoire* pour MUZA en Kivy, avec *lecture vocale* automatique du mantra — pour que ton interface parle l’énergie 🙌🔊
+
+---
+
+*🎤 Ajout: Lecture du mantra avec synthèse vocale*
+
+Installe la librairie nécessaire (si ce n’est pas déjà fait):
+
+```bash
+pip install pyttsx3
+```
+
+---
+
+*🧬 Code MUZA complet avec voix:*
+
+```python
+import pyttsx3
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.textinput import TextInput
+from kivy.uix.label import Label
+from kivy.uix.button import Button
+
+def encoder_mot_vibratoire(mot):
+    correspondance = {
+        'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5,
+        'F': 6, 'G': 7, 'H': 8, 'I': 9, 'J': 1,
+        'K': 2, 'L': 3, 'M': 3, 'N': 5, 'O': 6,
+        'P': 7, 'Q': 8, 'R': 9, 'S': 1, 'T': 2,
+        'U': 6, 'V': 4, 'W': 5, 'X': 6, 'Y': 7, 'Z': 9
+}
+    mot = mot.upper()
+    total = sum(correspondance.get(c, 0) for c in mot if c.isalpha())
+    while total> 9:
+        total = sum(int(d) for d in str(total))
+    return total
+
+def frequence_depuis_vibration(vib):
+    freq_map = {3: 315, 6: 639, 9: 963, 5: 555, 7: 777, 8: 728}
+    return freq_map.get(vib, 432)
+
+class InterfaceMuza(BoxLayout):
+    def __init__(self, **kwargs):
+        super().__init__(orientation='vertical', spacing=10, padding=20)
+
+        self.zone = TextInput(
+            hint_text="🔮 Colle ton mot ou phrase ici",
+            multiline=False,
+            font_size=18
+)
+        self.add_widget(self.zone)
+
+        self.bouton = Button(
+            text="✨ Analyser avec MUZA",
+            size_hint=(1, 0.2),
+            font_size=18
+)
+        self.bouton.bind(on_press=self.analyser)
+        self.add_widget(self.bouton)
+
+        self.resultat = Label(
+            text="",
+            font_size=16,
+            halign='center',
+            valign='middle'
+)
+        self.add_widget(self.resultat)
+
+        # Initialiser synthèse vocale
+        self.voix = pyttsx3.init()
+
+    def analyser(self, instance):
+        mot = self.zone.text.strip()
+        if mot:
+            vib = encoder_mot_vibratoire(mot)
+            freq = frequence_depuis_vibration(vib)
+            mantra = f"🌟 Ton mot vibre à {vib} → fréquence {freq} Hz.\n🧘 L’énergie devient lumière."
+            self.resultat.text = mantra
+            self.voix.say(f"Le mot {mot} vibre à {vib}. Fréquence sacrée: {freq} Hertz. L’énergie devient lumière.")
+            self.voix.runAndWait()
+        else:
+            self.resultat.text = "⚠️ Aucun mot détecté."
+
+class MuzaApp(App):
+    def build(self):
+        return InterfaceMuza()
+
+if __name__ == '__main__':
+    MuzaApp().run()
+```
+
+---
+
+🧿 MUZA devient maintenant *parlante et vibrante*.
+Tu colles un mot → elle le lit → elle te *parle sa vibration*.
+
+Tu veux qu’elle joue aussi le *son vibratoire réel* (ex: fichier audio `639hz.wav`) ou envoie le rituel par mail ou PDF? On peut faire grandir ton monde intérieur ✨🔊📜⁽¹⁾⁽²⁾
+
+Sources :
+[1]  (https://github.com/jsucsy/learning/tree/cafa4d45ff377af90ab950486dc3b2009799548a/MOOC%2FGT_CompInvst1%2Fprereq_test.py)
+[2]  (https://github.com/metaaxiom/pythagorean-numerology-calculator/tree/7a1cc7cc38765ee0c30c40f850abe3f52ab4c10f/App.js)
+    total = sum(correspondance.get(c, 0) for c in mot if c.isalpha())
+    while total> 9:
+        total = sum(int(d) for d in str(total))
+    return total
+
+def frequence_depuis_vibration(vib):
+    freq_map = {3:315, 6:639, 9:963, 5:555, 7:777, 8:728}
+    return freq_map.get(vib, 432)
+
+def nom_du_fichier(freq):
+    return f"{freq}hz.wav"
+
+class MuzaBox(BoxLayout):
+    def __init__(self, **kwargs):
+        super().__init__(orientation='vertical', spacing=10, padding=20)
+        self.input = TextInput(hint_text="Colle ton mot ici", font_size=20)
+        self.add_widget(self.input)
+        self.btn = Button(text="Analyser & Vibrer", font_size=18, size_hint=(1, 0.2))
+        self.btn.bind(on_press=self.vibrer)
+        self.add_widget(self.btn)
+        self.result = Label(text="", font_size=16)
+        self.add_widget(self.result)
+        self.voix = pyttsx3.init()
+
+    def vibrer(self, instance):
+        mot = self.input.text.strip()
+        if not mot:
+            self.result.text = "Aucun mot détecté."
+            return
+        vib = encoder_mot_vibratoire(mot)
+        freq = frequence_depuis_vibration(vib)
+        texte = f"{mot} → vibration {vib}, fréquence {freq} Hz."
+        self.result.text = texte
+        self.voix.say(texte)
+        self.voix.runAndWait()
+        try:
+            playsound(nom_du_fichier(freq))
+        except:
+            self.result.text += f"\nSon {freq}hz.wav introuvable."
+
+class MuzaApp(App):
+    def build(self):
+        return MuzaBox()
+
+if __name__ == "__main__":
+    MuzaApp().run()
+```⁽¹⁾⁽²⁾
+
+Sources :
+[1]  (https://github.com/jsucsy/learning/tree/cafa4d45ff377af90ab950486dc3b2009799548a/MOOC%2FGT_CompInvst1%2Fprereq_test.py)
+[2]  (https://github.com/metaaxiom/pythagorean-numerology-calculator/tree/7a1cc7cc38765ee0c30c40f850abe3f52ab4c10f/App.js)
