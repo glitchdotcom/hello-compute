@@ -1,6 +1,8 @@
 {
   "dependencies": {
     "@fastly/js-compute": "^3.30.1"
+    "express": "^4.17.1",
+    "socket.io": "^4.0.0"
   },
   "devDependencies": {
     "@fastly/cli": "^10.14.0"
