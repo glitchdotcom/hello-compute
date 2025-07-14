@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>GAA Tactics Planner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { margin: 0; font-family: sans-serif; background: #e8e8e8; }
+    canvas {
+      border: 1px solid #333;
+      background: url('https://upload.wikimedia.org/wikipedia/commons/f/fd/GAA_pitch_diagram.svg') no-repeat center/contain;
+      background-size: contain;
+      display: block;
+      margin: 0 auto;
+      touch-action: none;
+    }
+    #toolbar {
+      display: flex; justify-content: center; gap: 10px; padding: 10px;
+      flex-wrap: wrap;
+    }
+    button {
+      font-size: 16px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    .player {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: red;
+      color: white;
+      font-weight: bold;
+      text-align: center;
+      line-height: 40px;
+      position: absolute;
+      cursor: move;
+      user-select: none;
+      touch-action: none;
+    }
+  </style>
+</head>
+<body>
+
+<div id="toolbar">
+  <button onclick="addPlayer()">Add Player</button>
+  <button onclick="toggleDrawMode()">Draw Mode</button>
+  <button onclick="savePhase()">Next Phase</button>
+  <button onclick="prevPhase()">← Prev</button>
+  <button onclick="nextPhase()">Next →</button>
+  <button onclick="clearBoard()">Clear</button>
+</div>
+
+<canvas id="field" width="900" height="600"></canvas>
+
+<script>
+  const canvas = document.getElementById('field');
+  const ctx = canvas.getContext('2d');
+  const players = [];
+  const phases = [];
+  let currentPhase = -1;
+  let isDrawMode = false;
+  let lines = [];
+  let drawing = false;
+  let startX, startY;
+
+  function addPlayer() {
+    const player = document.createElement('div');
+    player.className = 'player';
+    player.innerText = players.length + 1;
+    player.style.left = '450px';
+    player.style.top = '300px';
+    document.body.appendChild(player);
+    dragElement(player);
+    players.push(player);
+  }
+
+  function dragElement(el) {
+    let offsetX, offsetY;
+
+    function onPointerDown(e) {
+      if (isDrawMode) return;
+      e.preventDefault();
+      offsetX = e.clientX - el.offsetLeft;
+      offsetY = e.clientY - el.offsetTop;
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+    }
+    function onPointerMove(e) {
+      el.style.left = (e.clientX - offsetX) + 'px';
+      el.style.top = (e.clientY - offsetY) + 'px';
+    }
+    function onPointerUp(e) {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+    }
+    el.addEventListener('pointerdown', onPointerDown);
+  }
+
+  function toggleDrawMode() {
+    isDrawMode = !isDrawMode;
+    canvas.style.cursor = isDrawMode ? 'crosshair' : 'default';
+  }
+
+  canvas.addEventListener('pointerdown', e => {
+    if (!isDrawMode) return;
+    const rect = canvas.getBoundingClientRect();
+    startX = e.clientX - rect.left;
+    startY = e.clientY - rect.top;
+    drawing = true;
+  });
+
+  canvas.addEventListener('pointerup', e => {
+    if (!isDrawMode || !drawing) return;
+    drawing = false;
+    const rect = canvas.getBoundingClientRect();
+    const endX = e.clientX - rect.left;
+    const endY = e.clientY - rect.top;
+    lines.push({ x1: startX, y1: startY, x2: endX, y2: endY });
+    drawAll();
+  });
+
+  function drawAll() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    lines.forEach(line => {
+      ctx.beginPath();
+      ctx.moveTo(line.x1, line.y1);
+      ctx.lineTo(line.x2, line.y2);
+      ctx.strokeStyle = "blue";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    });
+  }
+
+  function savePhase() {
+    if (players.length === 0) {
+      alert('Add some players first!');
+      return;
+    }
+    const phase = {
+      players: players.map(p => ({
+        left: p.style.left,
+        top: p.style.top,
+        text: p.innerText
+      })),
+      lines: [...lines]
+    };
+    phases.splice(currentPhase + 1); // Remove forward phases if any
+    phases.push(phase);
+    currentPhase++;
+    alert("Phase saved! Current phase: " + (currentPhase + 1));
+  }
+
+  function loadPhase(index) {
+    if (index < 0 || index >= phases.length) {
+      alert('No more phases');
+      return;
+    }
+    currentPhase = index;
+    clearPlayers();
+    lines = [];
+
+    const phase = phases[index];
+    phase.players.forEach(data => {
+      const player = document.createElement('div');
+      player.className = 'player';
+      player.innerText = data.text;
+      player.style.left = data.left;
+      player.style.top = data.top;
+      document.body.appendChild(player);
+      dragElement(player);
+      players.push(player);
+    });
+    lines = [...phase.lines];
+    drawAll();
+  }
+
+  function prevPhase() {
+    loadPhase(currentPhase - 1);
+  }
+
+  function nextPhase() {
+    loadPhase(currentPhase + 1);
+  }
+
+  function clearPlayers() {
+    players.forEach(p => p.remove());
+    players.length = 0;
+  }
+
+  function clearBoard() {
+    clearPlayers();
+    lines = [];
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+</script>
+
+</body>
+</html>
