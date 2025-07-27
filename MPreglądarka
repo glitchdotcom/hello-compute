@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<title>Gamingowa Przeglądarka z Kartami</title>
+<style>
+  body {
+    background-color: #0a0a0a;
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+    margin: 0; padding: 20px;
+    transition: background-color 0.5s;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 10px;
+    text-shadow: 0 0 10px #00ff00;
+  }
+  /* Pasek kart */
+  #tabsBar {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .tabButton {
+    padding: 6px 12px;
+    border: 2px solid #00ff00;
+    border-radius: 5px 5px 0 0;
+    cursor: pointer;
+    user-select: none;
+    background-color: #000;
+    color: #00ff00;
+    display: flex;
+    align-items: center;
+  }
+  .tabButton.active {
+    background-color: #00ff00;
+    color: #000;
+    font-weight: bold;
+  }
+  .closeBtn {
+    margin-left: 8px;
+    color: #00ff00;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .closeBtn:hover {
+    color: #ff0000;
+  }
+  #addTabBtn {
+    padding: 6px 12px;
+    border: 2px solid #00ff00;
+    border-radius: 5px;
+    cursor: pointer;
+    user-select: none;
+    background-color: #000;
+    color: #00ff00;
+    font-weight: bold;
+  }
+  /* Panel wyszukiwania */
+  #searchForm {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  #searchInput {
+    width: 400px; max-width: 90vw;
+    padding: 10px;
+    font-size: 18px;
+    border: 2px solid #00ff00;
+    background-color: #000;
+    color: #00ff00;
+    outline: none;
+  }
+  #searchButton {
+    padding: 10px 25px;
+    font-size: 18px;
+    background-color: #000;
+    color: #00ff00;
+    border: 2px solid #00ff00;
+    cursor: pointer;
+    transition: 0.2s;
+    margin-left: 10px;
+  }
+  #searchButton:hover {
+    background-color: #00ff00;
+    color: #000;
+  }
+  #languageSelect {
+    margin-left: 20px;
+    padding: 8px;
+    font-size: 16px;
+    background-color: #000;
+    color: #00ff00;
+    border: 2px solid #00ff00;
+    border-radius: 5px;
+    cursor: pointer;
+    vertical-align: middle;
+  }
+  /* Iframe */
+  #iframeContainer {
+    width: 90vw;
+    height: 600px;
+    margin: 0 auto;
+    border: 3px solid #00ff00;
+    border-radius: 5px;
+    position: relative;
+  }
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+  /* Gmail link */
+  #gmailLinkContainer {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 18px;
+  }
+  #gmailLinkContainer a {
+    color: #00ff00;
+    text-decoration: none;
+    border: 2px solid #00ff00;
+    padding: 10px 20px;
+    border-radius: 5px;
+    display: inline-block;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  #gmailLinkContainer a:hover {
+    background-color: #00ff00;
+    color: #000;
+  }
+  /* Suggestions */
+  #suggestions {
+    margin-top: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+  }
+  .suggestion-icon {
+    width: 50px;
+    height: 50px;
+    cursor: pointer;
+    filter: drop-shadow(0 0 2px #00ff00);
+    transition: transform 0.2s;
+  }
+  .suggestion-icon:hover {
+    transform: scale(1.2);
+  }
+  /* Background changer */
+  #bgChanger {
+    margin-top: 25px;
+    font-size: 18px;
+    color: #00ff00;
+    user-select: none;
+    text-align: center;
+  }
+  #bgChanger span {
+    cursor: pointer;
+    margin: 0 12px;
+    padding: 6px 12px;
+    border: 2px solid #00ff00;
+    border-radius: 6px;
+    transition: background-color 0.3s, color 0.3s;
+    display: inline-block;
+  }
+  #bgChanger span:hover {
+    background-color: #00ff00;
+    color: #000;
+  }
+</style>
+</head>
+<body>
+
+  <h1>🕹️ Gamingowa Przeglądarka z Kartami</h1>
+
+  <div id="tabsBar">
+    <!-- Tutaj będą karty -->
+    <div class="tabButton active" data-tabid="1">Nowa karta <span class="closeBtn" title="Zamknij kartę" style="display:none;">×</span></div>
+    <div id="addTabBtn" title="Dodaj nową kartę">+</div>
+  </div>
+
+  <form id="searchForm">
+    <input id="searchInput" type="text" placeholder="Wpisz zapytanie..." autocomplete="off" />
+    <button id="searchButton" type="submit">Szukaj</button>
+    <select id="languageSelect" title="Wybierz język">
+      <option value="pl" selected>PL</option>
+      <option value="en">EN</option>
+    </select>
+  </form>
+
+  <div id="suggestions">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/YouTube_Logo.svg" alt="YouTube" title="YouTube" class="suggestion-icon" id="ytIcon" />
+    <img src="https://upload.wikimedia.org/wikipedia/commons/6/63/Wikipedia-logo.png" alt="Wikipedia" title="Wikipedia" class="suggestion-icon" id="wikiIcon" />
+    <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg" alt="ChatGPT" title="ChatGPT" class="suggestion-icon" id="chatgptIcon" />
+  </div>
+
+  <div id="gmailLinkContainer" style="display:none;">
+    <a href="https://mail.google.com" target="_blank" rel="noopener noreferrer">Otwórz Gmail w nowej karcie</a>
+  </div>
+
+  <div id="bgChanger">
+    Zmień tło:
+    <span data-color="#0a0a0a">Czarne</span>
+    <span data-color="#0000ff">Niebieskie</span>
+    <span data-color="#ffffff" style="color:#000;">Białe</span>
+    <span data-color="#800080">Fioletowe</span>
+    <span data-color="#ff6600">Pomarańczowe</span>
+    <span data-color="#008000">Zielone</span>
+  </div>
+
+  <div id="iframeContainer">
+    <iframe id="iframe" src="https://www.google.com"></iframe>
+  </div>
+
+<script>
+  let tabs = [
+    {
+      id: 1,
+      title: 'Nowa karta',
+      url: 'https://www.google.com',
+    },
+  ];
+  let currentTabId = 1;
+  let nextTabId = 2;
+
+  const tabsBar = document.getElementById('tabsBar');
+  const addTabBtn = document.getElementById('addTabBtn');
+  const searchForm = document.getElementById('searchForm');
+  const searchInput = document.getElementById('searchInput');
+  const searchButton = document.getElementById('searchButton');
+  const languageSelect = document.getElementById('languageSelect');
+  const gmailLinkContainer = document.getElementById('gmailLinkContainer');
+  const suggestions = document.getElementById('suggestions');
+  const iframe = document.getElementById('iframe');
+  const iframeContainer = document.getElementById('iframeContainer');
+
+  function renderTabs() {
+    // Usuń wszystkie taby oprócz addTabBtn
+    [...tabsBar.querySelectorAll('.tabButton')].forEach(el => {
+      if (el !== addTabBtn) el.remove();
+    });
+    // Dodaj taby
+    tabs.forEach(tab => {
+      const tabEl = document.createElement('div');
+      tabEl.classList.add('tabButton');
+      if (tab.id === currentTabId) tabEl.classList.add('active');
+      tabEl.dataset.tabid = tab.id;
+      tabEl.textContent = tab.title;
+
+      // Dodaj przycisk zamknięcia, ale nie do jedynej karty
+      if (tabs.length > 1) {
+        const closeBtn = document.createElement('span');
+        closeBtn.classList.add('closeBtn');
+        closeBtn.textContent = '×';
+        closeBtn.title = 'Zamknij kartę';
+        tabEl.appendChild(closeBtn);
+
+        closeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeTab(tab.id);
+        });
+      }
+
+      tabEl.addEventListener('click', () => {
+        switchTab(tab.id);
+      });
+
+      tabsBar.insertBefore(tabEl, addTabBtn);
+    });
+  }
+
+  function switchTab(id) {
+    const tab = tabs.find(t => t.id === id);
+    if (!tab) return;
+    currentTabId = id;
+    iframe.src = tab.url;
+    searchInput.value = '';
+    renderTabs();
+
+    // Pokaż formularz wyszukiwania i sugestie
+    gmailLinkContainer.style.display = 'none';
+    suggestions.style.display = 'flex';
+    searchForm.style.display = 'inline-block';
+  }
+
+  function closeTab(id) {
+    if (tabs.length === 1) return; // Nie zamykaj ostatniej karty
+    const index = tabs.findIndex(t => t.id === id);
+    if (index === -1) return;
+    tabs.splice(index, 1);
+    // Jeśli zamknięta karta była aktywna, przełącz na pierwszą kartę
+    if (currentTabId === id) {
+      currentTabId = tabs[0].id;
+      iframe.src = tabs[0].url;
+    }
+    renderTabs();
+  }
+
+  addTabBtn.addEventListener('click', () => {
+    const newTab = {
+      id: nextTabId++,
+      title: 'Nowa karta',
+      url: 'https://www.google.com',
+    };
+    tabs.push(newTab);
+    currentTabId = newTab.id;
+    iframe.src = newTab.url;
+    searchInput.value = '';
+    renderTabs();
+  });
+
+  searchForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const query = searchInput.value.trim();
+    if (!query) return;
+    const url = 'https://www.google.com/search?q=' + encodeURIComponent(query);
+    // Zaktualizuj adres w aktywnej karcie i iframe
+    const tab = tabs.find(t => t.id === currentTabId);
+    if (tab) {
+      tab.url = url;
+      tab.title = query.length > 15 ? query.slice(0, 15) + '...' : query;
+      iframe.src = url;
+      renderTabs();
+    }
+  });
+
+  languageSelect.addEventListener('change', () => {
+    const lang = languageSelect.value;
+    if (lang === 'pl') {
+      searchInput.placeholder = "Wpisz zapytanie...";
+      searchButton.textContent = "Szukaj";
+      gmailLinkContainer.querySelector('a').textContent = "Otwórz Gmail w nowej karcie";
+      bgChanger.firstChild.textContent = "Zmień tło:";
+    } else {
+      searchInput.placeholder = "Enter query...";
+      searchButton.textContent = "Search";
+      gmailLinkContainer.querySelector('a').textContent = "Open Gmail in a new tab";
+      bgChanger.firstChild.textContent = "Change background:";
+    }
+  });
+
+  // Ikony sugestii
+  document.getElementById('ytIcon').addEventListener('click', () => {
+    window.open('https://www.youtube.com', '_blank');
+  });
+  document.getElementById('wikiIcon').addEventListener('click', () => {
+    window.open('https://pl.wikipedia.org', '_blank');
+  });
+  document.getElementById('chatgptIcon').addEventListener('click', () => {
+    window.open('https://chat.openai.com', '_blank');
+  });
+
+  // Zmiana tła
+  const bgChanger = document.getElementById('bgChanger');
+  bgChanger.querySelectorAll('span').forEach(span => {
+    span.addEventListener('click', () => {
+      document.body.style.backgroundColor = span.getAttribute('data-color');
+    });
+  });
+
+  // Start
+  renderTabs();
+  languageSelect.dispatchEvent(new Event('change'));
+</script>
+
+</body>
+</html>
