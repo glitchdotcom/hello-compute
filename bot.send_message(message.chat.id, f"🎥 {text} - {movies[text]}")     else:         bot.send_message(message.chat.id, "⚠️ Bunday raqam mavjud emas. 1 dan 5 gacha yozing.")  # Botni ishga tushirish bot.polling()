@@ -1,0 +1,35 @@
+bot.py
+import telebot
+
+# Sizning bot tokeningiz
+TOKEN = '7538022532:AAFSLd3Z6vve_i5E7xLgEVURpGZcC3X6OzM'
+bot = telebot.TeleBot(TOKEN)
+
+# Kino ro'yxati
+movies = {
+    "1": "Naruto",
+    "2": "Demon Slayer",
+    "3": "One Piece",
+    "4": "Attack on Titan",
+    "5": "Jujutsu Kaisen"
+}
+
+# /start komandasi uchun javob
+@bot.message_handler(commands=['start'])
+def welcome(message):
+    bot.send_message(
+        message.chat.id,
+        "🎬 Assalomu alaykum!\n\nRaqamni kiriting (1 dan 5 gacha):"
+    )
+
+# Har qanday xabar uchun ishlovchi funksiya
+@bot.message_handler(func=lambda message: True)
+def send_movie(message):
+    text = message.text.strip()
+    if text in movies:
+        bot.send_message(message.chat.id, f"🎥 {text} - {movies[text]}")
+    else:
+        bot.send_message(message.chat.id, "⚠️ Bunday raqam mavjud emas. 1 dan 5 gacha yozing.")
+
+# Botni ishga tushirish
+bot.polling()
