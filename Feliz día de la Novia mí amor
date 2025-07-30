@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Para mi niña hermosa</title>
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #ffe6eb, #f7d4ff);
+      font-family: 'Quicksand', sans-serif;
+      color: #3c003c;
+      overflow-x: hidden;
+    }
+    header {
+      text-align: center;
+      padding: 40px 20px;
+      background-color: rgba(255, 255, 255, 0.4);
+    }
+    header h1 {
+      font-family: 'Pacifico', cursive;
+      font-size: 3em;
+      color: #ff4b91;
+      margin-bottom: 10px;
+    }
+    .fecha {
+      font-size: 1.2em;
+    }
+    .contenido {
+      padding: 30px;
+      max-width: 900px;
+      margin: auto;
+    }
+    .mensaje-principal {
+      font-size: 1.3em;
+      margin-bottom: 30px;
+      background-color: #fff0f5;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .carta {
+      white-space: pre-line;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+    .imagen-corazon {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .imagen-corazon img {
+      width: 250px;
+      border-radius: 15px;
+    }
+    .snoppy {
+      text-align: center;
+      margin: 20px 0;
+    }
+    .snoppy img {
+      width: 180px;
+    }
+    .te-amo {
+      text-align: center;
+      font-size: 1.4em;
+      color: #ff2e63;
+      animation: latido 1s infinite alternate;
+    }
+    @keyframes latido {
+      from { transform: scale(1); }
+      to { transform: scale(1.1); }
+    }
+    .boton {
+      text-align: center;
+      margin-top: 30px;
+    }
+    .boton button {
+      padding: 15px 30px;
+      font-size: 1em;
+      background-color: #ff4b91;
+      color: white;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .boton button:hover {
+      background-color: #d93675;
+    }
+    audio {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <audio autoplay loop>
+    <source src="https://files.catbox.moe/l5a11b.mp3" type="audio/mpeg">
+  </audio>
+
+  <header>
+    <h1>Feliz Día de la Novia ❤️</h1>
+    <div class="fecha">22/04/2025</div>
+    <div class="te-amo">Te amo, Amorcito 💖</div>
+  </header>
+
+  <div class="contenido">
+    <div class="mensaje-principal">
+      “Es difícil expresar con palabras lo que siento, porque mi amor, cariño sobrepasa cualquier descripción. Es un afecto que reside en mi interior, conectado a ti, que nunca termina. Eres mi universo, y amarte, quererte es lo más genuino y espontáneo que he experimentado.”
+    </div>
+
+    <div class="imagen-corazon">
+      <img src="/mnt/data/Captura de pantalla 2025-07-29 162343.png" alt="Corazón con manos">
+    </div>
+
+    <div class="carta">
+      Mi niña hermosa,
+
+      Hoy quiero escribirte desde lo más profundo de mi corazón, sin filtros ni reservas… solo con amor. Sé que a veces la distancia puede ser pesada, y que no poder abrazarte cuando más lo deseo duele, pero lo que he aprendido al amarte a la distancia es que cuando el amor es verdadero, no hay barreras que lo detengan ni kilómetros que lo separen.
+
+      Desde que llegaste a mi vida, todo ha cambiado. Tu forma de hablarme, esa sonrisa que me regalas a través de la pantalla, y cómo logras que me sienta querido incluso desde lejos… todo eso me enamora más y más cada día. Eres mi pedacito de paz, mi refugio, mi alegría. Y aunque no estés físicamente a mi lado, te siento presente en cada instante.
+
+      En este Día de la Novia, quiero que sepas que me haces inmensamente feliz. Tenerte como novia es una bendición que agradezco sin cesar. No importa cuántos días pasen o cuántas noches extrañe tu compañía: lo único que sé con certeza es que te amo con todo mi ser.
+
+      Gracias por ser tú. Por regalarme un amor tan puro, tan hermoso, tan lleno de verdad. Gracias por hacerme sentir especial, incluso a la distancia. Y sobre todo, gracias por ser mi niña hermosa.
+
+      Feliz Día de la Novia, amor. Te prometo que todo esto valdrá la pena. Estoy contigo, hoy y siempre.
+
+      Con todo mi amor ❤️❤️
+    </div>
+
+    <div class="snoppy">
+      <img src="https://i.pinimg.com/originals/8e/f0/6e/8ef06e81a8be969c269c8356ef693e29.gif" alt="Snoppy enamorado">
+    </div>
+
+    <div class="te-amo">Eres la mujer más hermosa de la galaxia 💫</div>
+
+    <div class="boton">
+      <button onclick="alert('Te amo más de lo que podrías imaginar ❤️')">Haz clic si me amas</button>
+    </div>
+  </div>
+
+</body>
+</html>
