@@ -1,0 +1,69 @@
+flask
+from flask import Flask
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is running!"
+
+if __name__ == '__main__':
+    app.run()python3 main.{
+  "start": "bash start.sh"
+}from flask import Flask
+from telegram import Bot
+import threading
+
+app = Flask(__name__)
+
+bot = Bot(token='YOUR_BOT_TOKEN')
+
+@app.route('/')
+def index():
+    return "Bot is Alive!"
+
+def run_bot():
+    bot.send_message(chat_id=YOUR_ID, text="🤖 Bot restarted!")
+
+if __name__ == '__main__':
+    threading.Thread(target=run_bot).start()
+    app.run()if query.data == "balance":
+        await query.edit_message_text(f"💰 ব্যালেন্স: {user_data['balance']}/100")
+
+    elif query.data == "withdraw":
+        if user_data["balance"] >= 100:
+            await query.edit_message_text("✅ আপনি নগদ নম্বর দিন মগজ বাটনে ক্লিক করে।")
+        else:
+            await query.edit_message_text(f"❌ মিনিমাম ১০০ টাকা দরকার, আপনার ব্যালেন্স {user_data['balance']}")
+
+    elif query.data == "nagad":
+        await query.edit_message_text("📱 দয়া করে আপনার নগদ নাম্বারটি পাঠান।")
+
+        context.user_data["awaiting_nagad"] = True
+
+async def nagad_collector(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if context.user_data.get("awaiting_nagad"):
+        number = update.message.text
+        user_id = str(update.effective_user.id)
+        data = load_data()
+        data[user_id]["nagad"] = number
+        save_data(data)
+        context.user_data["awaiting_nagad"] = False
+        await update.message.reply_text(f"✅ আপনার নগদ নাম্বার: {number} সংরক্ষিত হয়েছে!")
+
+async def admin_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != OWNER_ID:
+        return
+    msg = update.message.text.replace("/broadcast ", "")
+    data = load_data()
+    for uid in data:
+        try:
+            await context.bot.send_message(chat_id=uid, text=msg)
+        except:
+            continue
+    await update.message.reply_text("✅ মেসেজ পাঠানো শেষ।")
+
+app = Application.builder().token(TOKEN).build()
+app.add_handler(CommandHandler("start", start))
+app.add_handler(CallbackQueryHandler(button_handler))
+app.add_handler(CommandHandler("broadcast", admin_broadcast))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, nagad_collecto
