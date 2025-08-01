@@ -1,0 +1,28 @@
+// server.js – Glitch backend for Silaal 🌱
+
+const express = require('express'); const fs = require('fs'); const cors = require('cors'); const multer = require('multer'); const bodyParser = require('body-parser'); const path = require('path');
+
+const app = express(); const PORT = process.env.PORT || 3000;
+
+app.use(cors()); app.use(express.json()); app.use(bodyParser.urlencoded({ extended: true })); app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); app.use(express.static('public')); // Serve frontend from /public
+
+const upload = multer({ dest: 'uploads/' });
+
+// Load users from file or start fresh const USERS_FILE = './users.json'; let users = {}; if (fs.existsSync(USERS_FILE)) { users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8')); }
+
+// Login or register user app.post('/api/login', (req, res) => { const { username } = req.body; if (!username) return res.status(400).json({ error: 'Username required' });
+
+if (!users[username]) { users[username] = { journal: [], bond: 0 }; fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2)); }
+
+res.json({ success: true, data: users[username] }); });
+
+// Save journal entry app.post('/api/journal', (req, res) => { const { username, entry } = req.body; if (!users[username]) return res.status(404).json({ error: 'User not found' });
+
+users[username].journal.push({ entry, date: new Date().toISOString() }); fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+
+res.json({ success: true }); });
+
+// Upload image app.post('/api/upload', upload.single('photo'), (req, res) => { if (!req.file) return res.status(400).json({ error: 'No file uploaded' }); res.json({ file: req.file.filename }); });
+
+// Start server app.listen(PORT, () => { console.log(✅ Silaal backend running on port ${PORT}); });
+
