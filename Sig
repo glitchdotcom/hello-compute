@@ -1,0 +1,42 @@
+<!DOCTYPE html><html>
+<head>
+<meta charset="UTF-8">
+<title>Cờ Ngáo Mở Rộng</title>
+<style>
+  body { font-family: Arial, sans-serif; text-align: center; }
+  table { border-collapse: collapse; margin: 20px auto; }
+  td { width: 60px; height: 60px; text-align: center; vertical-align: middle; font-size: 24px; cursor: pointer; }
+  .white { background-color: #eee; }
+  .black { background-color: #666; color: white; }
+  .highlight { background-color: yellow !important; }
+</style>
+</head>
+<body>
+<h1>Cờ Ngáo – Bản Mở Rộng</h1>
+<p>3 quân mới: 🏹 Cung thủ, 💣 Pháo binh, 🛡️ Giáo binh</p>
+<div id="board"></div>
+<script>
+const pieces = {
+  'A': '🏹', // Archer
+  'C': '💣', // Cannon
+  'S': '🛡️', // Spearman
+  'P': '♟', // Pawn
+  'R': '♜', // Rook
+  'N': '♞', // Knight
+  'B': '♝', // Bishop
+  'Q': '♛', // Queen
+  'K': '♚'  // King
+};let board = Array.from({length: 8}, () => Array(8).fill(null));
+
+function initBoard() { // Example setup with custom pieces in back row board[0][2] = 'A'; board[0][5] = 'C'; board[0][4] = 'S'; board[7][2] = 'A'; board[7][5] = 'C'; board[7][4] = 'S'; renderBoard(); }
+
+let selected = null;
+
+function renderBoard() { let html = '<table>'; for (let i = 0; i < 8; i++) { html += '<tr>'; for (let j = 0; j < 8; j++) { let color = (i + j) % 2 === 0 ? 'white' : 'black'; html += <td class="${color}" onclick="cellClick(${i},${j})">${board[i][j] ? pieces[board[i][j]] : ''}</td>; } html += '</tr>'; } html += '</table>'; document.getElementById('board').innerHTML = html; }
+
+function cellClick(i, j) { if (!selected && board[i][j]) { selected = {x: i, y: j}; } else if (selected) { board[i][j] = board[selected.x][selected.y]; board[selected.x][selected.y] = null; selected = null; renderBoard(); } }
+
+initBoard(); </script>
+
+</body>
+</html>
