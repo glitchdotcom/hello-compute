@@ -1,0 +1,21 @@
+{
+  "name": "flappy-clone",
+  "version": "1.0.0",
+  "description": "Flappy Bird clone wrapped for iOS with Capacitor",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'No build step needed'"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/core": "^6.1.0"
+  },
+  "devDependencies": {},
+  "capacitor": {
+    "appId": "com.yourname.flappy",
+    "appName": "Flappy Clone",
+    "webDir": "www"
+  }
+}
