@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Captura de Localização</title>
+</head>
+<body>
+  <button onclick="capturarLocalizacao()">Enviar Localização</button>
+  <div id="resultado"></div>
+
+  <script>
+    function capturarLocalizacao() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+
+          // Enviar para servidor - aqui um exemplo com fetch POST
+          fetch('/salvar-localizacao', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ latitude: lat, longitude: lon })
+          }).then(() => {
+            document.getElementById('resultado').innerHTML = 
+              '<p>Localização enviada!</p><img src="rato.jpg" alt="Foto de rato" />';
+          }).catch(err => {
+            document.getElementById('resultado').innerText = 'Erro ao enviar localização.';
+          });
+
+        }, function(error) {
+          alert('Erro ao capturar localização: ' + error.message);
+        });
+      } else {
+        alert('Geolocalização não suportada neste navegador.');
+      }
+    }
+  </script>
+</body>
+</html>
