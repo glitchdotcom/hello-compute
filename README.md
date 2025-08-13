@@ -1,173 +1,506 @@
-# Oh hi Compute!
+# ia_salud_distraccion.py
+"""
+Chatbot de salud + menú de distracción.
+Diseñado para ejecutarse en entornos con o sin Gradio/SSL.
+Si Gradio no está disponible (por ejemplo, falta el módulo 'ssl'), el script hace un fallback a una interfaz de línea de comandos.
+"""
 
-This is an app for learning about edge computing with Fastly!
+import random
+from dataclasses import dataclass
+from typing import List, Tuple, Optional
+import sys
+import traceback
 
-In this project you'll learn how to enhance the behavior of a website at the network edge using logic written in JavaScript. You can test the functionality locally in the codespace without installing any local tooling, then grab a Fastly API key when you're ready to deploy.
+# Intento de import opcional de gradio
+GRADIO_AVAILABLE = False
+GRADIO_IMPORT_ERROR = None
+try:
+    import gradio as gr
+    GRADIO_AVAILABLE = True
+except Exception as e:
+    GRADIO_AVAILABLE = False
+    GRADIO_IMPORT_ERROR = e
 
-## In this doc
+DISCLAIMER = (
+    "⚠️ Aviso: Esta información es educativa y no sustituye consejo médico profesional. "
+    "Consulta a un especialista para diagnósticos o tratamientos."
+)
 
-* [Fork your own app](#fork-your-own-app)
-* [Get to know your app](#get-to-know-your-app)
-  * [Make a change](#make-a-change)
-  * [Share your draft app](#share-your-draft-app)
-* [Deploy your app to Fastly Compute](#deploy-your-app-to-fastly-compute)
-* [Save your edits to GitHub](#save-your-edits-to-github)
-* [How this project works](#how-this-project-works)
-  * [Extensions](#extensions)
-* [Keep going! 🚀](#keep-going-)
+TIPS_SALUD = [
+    "Bebe 6–8 vasos de agua al día, ajusta si haces ejercicio o hace calor.",
+    "Dormir 7–9 horas mejora el apetito, el ánimo y el rendimiento cognitivo.",
+    "Realiza 150 min/sem de actividad moderada (o 75 min vigorosa) + fuerza 2 días.",
+    "Llena medio plato con verduras y frutas en la mayoría de tus comidas.",
+    "Prioriza alimentos mínimamente procesados: granos enteros, legumbres, frutas, verduras, frutos secos.",
+    "Limita bebidas azucaradas; prefiere agua, infusiones o café sin azúcar.",
+    "Toma pausas activas si estudias/trabajas sentado: 5 min de movimiento cada hora.",
+    "Practica higiene del sueño: horario regular, menos pantallas 1h antes de dormir.",
+]
 
-## Fork your own app
+DIETAS_BASE = {
+    "Mediterránea": "Enfoque en frutas, verduras, legumbres, granos enteros, aceite de oliva, pescado; poca carne roja.",
+    "Balanceada": "50% carbohidratos complejos, 25–30% proteínas, 20–25% grasas saludables; porciones moderadas.",
+    "DASH": "Alta en potasio, calcio y magnesio; baja en sodio; ideal para presión arterial.",
+    "Vegetariana": "Énfasis en legumbres, tofu/tempeh, lácteos/huevos opcionales, variedad de verduras y granos.",
+}
 
-**Fork** [this repository](https://github.com/glitchdotcom/hello-compute/) to create your own copy of the app.
+CURIOSIDADES = [
+    "Las zanahorias originalmente eran moradas, no naranjas.",
+    "Caminar 10 minutos tras comer puede ayudar a controlar picos de glucosa.",
+    "El corazón late ~100,000 veces al día en promedio.",
+    "La avena contiene beta-glucanos, fibra asociada a mejor perfil lipídico.",
+]
 
-In your fork, open the site in a codespace by clicking **Code** > **Codespaces** and creating a new codespace on your main branch. 
+CHISTES = [
+    "¿Qué hace una abeja en el gimnasio? ¡Zum-ba!",
+    "—Doctor, me siento invisible. —¿Quién dijo eso?",
+    "¿Qué le dice una impresora a otra? ¿Esa hoja es tuya o es una impresión mía?",
+    "Ayer me caí en un círculo... ¡Menos mal que no fue en vano!",
+]
 
-<img alt="Create codespace" src="https://github.com/user-attachments/assets/cb29a8da-d1ac-42f5-962c-7d43b8011324" width="400px"/><br/>
+TRIVIA = [
+    ("¿Cuánta agua se recomienda en promedio al día para un adulto?",
+     ["6–8 vasos", "1 vaso", "15 vasos"], 0),
+    ("¿Cuántos minutos de actividad moderada a la semana sugiere la OMS?",
+     ["150 minutos", "20 minutos", "300 minutos"], 0),
+    ("¿Cuál es una grasa saludable típica de la dieta mediterránea?",
+     ["Aceite de oliva", "Grasa trans", "Manteca hidrogenada"], 0),
+]
 
-Give the codespace a minute or two to start up – it'll automatically build and preview your new app! 
+OBJETIVOS = ["General", "Bajar grasa", "Ganar músculo", "Mejorar energía", "Control presión"]
+TIPOS_DIETA = ["Omnívora", "Vegetariana", "Mediterránea", "DASH", "Balanceada"]
 
-> 🌎 🤔 Note that the geolocation information will be based on your request from inside the Codespace container (so it'll likely indicate that your request is coming from the US even if you're somewhere else). When you publish to Fastly and view your `edgecompute.app` address, you should see more relevant location info.
+PLATOS = {
+    "desayuno": {
+        "Omnívora": [
+            "Avena con plátano y maní + leche/alternativa",
+            "Tostadas integrales con huevo revuelto y tomate",
+            "Yogur natural con frutos rojos y granola",
+        ],
+        "Vegetariana": [
+            "Avena con manzana y canela",
+            "Tostadas integrales con hummus y pepino",
+            "Yogur/soya con chía y mango",
+        ],
+        "Mediterránea": [
+            "Pan integral con tomate y aceite de oliva + queso fresco",
+            "Avena con frutos secos y miel",
+            "Tortilla de espinaca con pan integral",
+        ],
+        "DASH": [
+            "Avena con frutas y semillas, poca sal",
+            "Pan integral con palta/aguacate y huevo",
+            "Smoothie de plátano y espinaca (sin azúcar)",
+        ],
+        "Balanceada": [
+            "Avena + fruta + nueces",
+            "Huevos con verduras + pan integral",
+            "Yogur + granola + fruta",
+        ],
+    },
+    "almuerzo": {
+        "Omnívora": [
+            "Pollo a la plancha con quinoa y ensalada",
+            "Arroz integral con atún y verduras salteadas",
+            "Lomo saltado versión ligera con más verduras",
+        ],
+        "Vegetariana": [
+            "Lentejas guisadas con arroz integral y ensalada",
+            "Tacu tacu de frejoles con ensalada",
+            "Tofu salteado con verduras y quinoa",
+        ],
+        "Mediterránea": [
+            "Pescado al horno con papa y ensalada de tomate y olivas",
+            "Ensalada grande con garbanzos, pepino, tomate y aceite de oliva",
+            "Pasta integral con verduras, pesto y queso moderado",
+        ],
+        "DASH": [
+            "Pechuga de pollo con camote y ensalada (bajo en sodio)",
+            "Pescado a la plancha con arroz integral",
+            "Ensalada de atún con verduras y legumbres",
+        ],
+        "Balanceada": [
+            "Carne magra con arroz integral y ensalada",
+            "Pasta integral con pollo y verduras",
+            "Guiso de garbanzos con vegetales",
+        ],
+    },
+    "cena": {
+        "Omnívora": [
+            "Ensalada de atún con palta y tomate",
+            "Tortilla de verduras con pan integral",
+            "Sopa de verduras con pollo desmenuzado",
+        ],
+        "Vegetariana": [
+            "Revuelto de huevos con espinaca y champiñón",
+            "Ensalada de quinoa con palta y tomate",
+            "Crema de zapallo con semillas",
+        ],
+        "Mediterránea": [
+            "Ensalada griega (tomate, pepino, aceitunas, queso) + pan integral",
+            "Sopa minestrone ligera",
+            "Pisto de verduras con huevo poché",
+        ],
+        "DASH": [
+            "Sopa de verduras baja en sodio + pan integral",
+            "Pavo al horno con ensalada",
+            "Tortilla de claras con verduras",
+        ],
+        "Balanceada": [
+            "Ensalada completa (proteína + carbo complejo + verduras)",
+            "Sándwich integral de pavo/queso + ensalada",
+            "Arroz integral con salteado de verduras y proteína",
+        ],
+    },
+    "snack": [
+        "Fruta + puñado de frutos secos",
+        "Yogur natural",
+        "Palitos de zanahoria con hummus",
+        "Galletas de avena caseras",
+        "Maíz cancha/pochoclo sin exceso de sal",
+    ],
+}
 
-## Get to know your app
+DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
 
-This starter kit changes the behavior of a website at the edge. Check out the <a href="https://glitchdotcom.github.io/compute-origin" target="_blank">origin version of the site</a>.
+@dataclass
+class MenuSemanal:
+    objetivo: str
+    tipo: str
+    calorias: int
+    plan: List[Tuple[str, str, str, str, str]]
 
-In your codespace preview:
 
-* Try opening a page that doesn't exist: `/ohno`
-* Now try a page that the origin returns as JSON: `/data.json`
+def generar_menu(objetivo: str, tipo: str, calorias: int = 2000) -> MenuSemanal:
+    tipo_norm = tipo if tipo in PLATOS["desayuno"] else "Balanceada"
+    plan = []
+    random.seed(42 + len(tipo_norm) + len(objetivo))
+    for d in DIAS:
+        des = random.choice(PLATOS["desayuno"][tipo_norm])
+        alm = random.choice(PLATOS["almuerzo"][tipo_norm])
+        cen = random.choice(PLATOS["cena"][tipo_norm])
+        snk = random.choice(PLATOS["snack"])
+        plan.append((d, des, alm, cen, snk))
+    return MenuSemanal(objetivo, tipo_norm, calorias, plan)
 
-![app in codespace](https://github.com/user-attachments/assets/77d9c974-edaa-4053-88fd-84c36707607e)
 
-* When your website preview opens, click the **🔎 Split** button at the bottom so that you can see the site side by side with your code.
-* _You can close [x] the **Terminal** while you work._
+def formatear_menu(menu: MenuSemanal) -> str:
+    header = f"Plan semanal ({menu.tipo}, objetivo: {menu.objetivo}, ~{menu.calorias} kcal)\n" \
+             f"{DISCLAIMER}\n\n"
+    filas = []
+    for d, des, alm, cen, snk in menu.plan:
+        filas.append(
+            f"**{d}**\n- Desayuno: {des}\n- Almuerzo: {alm}\n- Cena: {cen}\n- Snack: {snk}\n"
+        )
+    return header + "\n".join(filas)
 
-You can view the origin version of the site in the codespace too by opening the **💻 Terminal**, selecting **Ports** and clicking the little preview button next to the `Origin` listing:
 
-![origin site open](https://github.com/user-attachments/assets/cc768d28-458f-4ab8-b772-f88d7db51603)
+def clasificar_intencion(mensaje: Optional[str]) -> str:
+    if not mensaje:
+        return "general"
+    m = mensaje.lower()
+    if any(k in m for k in ["menu", "plan", "comer", "dieta"]):
+        return "menu"
+    if any(k in m for k in ["bajar", "grasa", "peso"]):
+        return "bajar"
+    if any(k in m for k in ["músculo", "musculo", "ganar fuerza", "proteína"]):
+        return "musculo"
+    if any(k in m for k in ["presión", "hipertensión", "sodio", "sal"]):
+        return "presion"
+    if any(k in m for k in ["agua", "dormir", "ejercicio", "hábitos", "habitos", "estrés", "estres"]):
+        return "habitos"
+    return "general"
 
-> ⚠️ _If you're using your own origin website and want to view it in the codespace, change the code in `origin/index.html` to point the `iframe` `src` attribute to your site._
 
-Explore the code:
+def responder_salud(chat_hist, mensaje, objetivo, tipo_dieta, alergias):
+    intent = clasificar_intencion(mensaje)
+    base: List[str] = []
+    if intent == "menu":
+        base.append("Puedo generarte un menú semanal. Abre la pestaña 'Menú Semanal' o usa la opción correspondiente.")
+    elif intent == "bajar":
+        base += [
+            "Déficit calórico moderado (10–20%) y 1.6–2.2 g proteína/kg de peso.",
+            "Prioriza volumen de alimentos (verduras, frutas, legumbres) y bebidas sin azúcar.",
+        ]
+    elif intent == "musculo":
+        base += [
+            "Superávit ligero (5–10%), 1.6–2.2 g proteína/kg y entrenamiento de fuerza 2–4x/sem.",
+            "Distribuye proteína en 3–5 comidas (20–40 g/ingesta).",
+        ]
+    elif intent == "presion":
+        base += [
+            "Enfoque DASH: más frutas/verduras, lácteos bajos en grasa, legumbres y menos sodio.",
+            "Camina 30 min al día y limita ultraprocesados/embutidos.",
+        ]
+    elif intent == "habitos":
+        base += [random.choice(TIPS_SALUD), random.choice(TIPS_SALUD)]
+    else:
+        base += [random.choice(TIPS_SALUD)]
 
-* Your `fastly.toml` file includes the service config
-* The `src/index.js` file includes the application logic
+    if alergias:
+        base.append(f"⚠️ Considera tu(s) alergia(s): {alergias}. Lee etiquetas y evita trazas.")
 
-The functionality:
+    resp = "\n• ".join([DISCLAIMER] + base)
+    chat_hist = (chat_hist or []) + [("Tú", mensaje or ""), ("IA", resp)]
+    return chat_hist, chat_hist
 
-* The app changes the stylesheet from `style.css` to `edge.css`
-* It grabs geolocation info about the request (this won't work reliably on the local server, read on to deploy to the Fastly network)
-* It also adds a cookie to the response (the origin website writes it into the page)
-* If the request is for a `json` file, we send the data back in a synthetic HTML page
-* We send synthetic pages back for any 404 or 500 errors
 
-### Make a change
+OPCIONES_RPS = ["Piedra", "Papel", "Tijera"]
 
-Make a change to the `index.js` code!
 
-Find the line where the code sets the value of the `geo` variable using `getGeolocationForIpAddress` and add the following on the next line:
+def jugar_rps(eleccion_usuario: str) -> str:
+    if eleccion_usuario not in OPCIONES_RPS:
+        return f"Opción inválida: {eleccion_usuario}. Elige entre {OPCIONES_RPS}."
+    bot = random.choice(OPCIONES_RPS)
+    if eleccion_usuario == bot:
+        res = "Empate"
+    elif (eleccion_usuario == "Piedra" and bot == "Tijera") or \
+         (eleccion_usuario == "Papel" and bot == "Piedra") or \
+         (eleccion_usuario == "Tijera" and bot == "Papel"):
+        res = "¡Ganaste!"
+    else:
+        res = "Perdiste"
+    return f"Tú: {eleccion_usuario} | IA: {bot} → {res}"
 
-```js
-// Let's get the time of day and find out how far from UTC it is
-let displayTime = new Date().getHours();
-let offset = geo.utc_offset;
-displayTime += offset / 100;
 
-// Tailor the greeting to the user time of day
-greeting =
-  displayTime > 4 && displayTime < 12
-    ? "Morning! "
-    : displayTime >= 12 && displayTime < 18
-    ? "Afternoon! "
-    : "Evening! ";
-```
+@dataclass
+class EstadoNumero:
+    objetivo: int = random.randint(1, 50)
+    intentos: int = 0
 
-The code changes the greeting to reflect the time of day at the user location.
 
-The Fastly CLI will automatically rebuild and run the app – you'll see the effects in the preview.
+def reiniciar_numero() -> EstadoNumero:
+    return EstadoNumero()
 
-### Share your draft app 
 
-You can share links to your draft app with collaborators – click **🔗 Share** at the bottom of the editor. The terminal output will include a link you can right-click and copy to share with anyone you like! 
+def intentar_numero(estado: EstadoNumero, numero_usuario: int):
+    try:
+        numero_usuario = int(numero_usuario)
+    except Exception:
+        return estado, "Ingresa un número válido entre 1 y 50."
+    estado.intentos += 1
+    if numero_usuario == estado.objetivo:
+        msg = f"¡Correcto! Era {estado.objetivo}. Intentos: {estado.intentos}. Reinicié el número."
+        estado = reiniciar_numero()
+    elif numero_usuario < estado.objetivo:
+        msg = "Muy bajo. Intenta un número mayor."
+    else:
+        msg = "Muy alto. Intenta un número menor."
+    return estado, msg
 
-> This project includes a handy shortcut button for grabbing your preview URL but it might be a wee bit error prone 😅 you can also access these details in **💻 Terminal** > **PORTS** or by clicking the little Forwarded Ports icon: <img src="https://github.com/user-attachments/assets/6bfc0238-a0a8-434f-9188-ff1d45df0ca0" style="height:1em" alt="ports icon"/>
->
-> Change `private` to `public` by right-clicking your running port and choosing from the options.
->
-> Copy the URL to your clipboard and share it 📋.
 
-## Deploy your app to Fastly Compute
+def pregunta_trivia(idx: int):
+    q, opts, _ = TRIVIA[idx % len(TRIVIA)]
+    return q, opts
 
-When you're ready to deploy your app to the Fastly network, you'll need an API key and one command entered into the Terminal:
 
-* Sign up for a <strong><a href="https://www.fastly.com/signup/" target="_blank">free Fastly developer account</a></strong>
-* Grab an **API Token** from **Account** > **API Tokens** > **Personal Tokens**
-  * _Type_: Automation
-  * _Role_: Engineer
-  * _Scope_: Global (deselect the _Read-only access_ box)
-  * _Access_: All services
-  * _Expiration_: Never expire
-* Copy the value of your new token
-- **Copy the token value into GitHub**
-  - Back in your codespace, click into the textfield at the top of the editor and type `>` to access the command palette
-  - Type `secret` and select **Codespaces: Manage user secrets**
-    - <img alt="Secret command" src="https://github.com/user-attachments/assets/a6cfeac8-2aca-40a4-ab41-d207733b61cc" width="300px"/>
-  - Click **+ Add a new secret**
-    - <img alt="Add new secret" src="https://github.com/user-attachments/assets/350e545c-0073-4327-ac99-3663049e7aad" width="400px"/>
-  - Enter the name `FASTLY_API_TOKEN`
-    - <img alt="Fastly token" src="https://github.com/user-attachments/assets/536d1b2a-bf62-4085-aac4-ade7d2898583" width="400px"/>
-  - Paste your token value and enter
+def responder_trivia(idx: int, opcion: str) -> str:
+    q, opts, ans = TRIVIA[idx % len(TRIVIA)]
+    correcta = opts[ans]
+    if opcion == correcta:
+        return "✅ ¡Correcto!"
+    return f"❌ Incorrecto. Respuesta: {correcta}"
 
-In the notifications area at the bottom right of your codespace, you should see a prompt to **reload** for the new environment variable, so go ahead and click that (otherwise click the little bell 🔔 icon to check for the message).
 
-Hit the **🚀 Publish** button at the bottom of the editor, enter `y` and watch the **Terminal** output for your new site address! It might take a couple of minutes... 🥁
+# ---------------- Tests simples (no dep en SSL/Gradio) ----------------
 
-![App address in the terminal](https://github.com/user-attachments/assets/96cd1ce2-1833-4471-a726-69f4d948a55b)
+def run_basic_tests() -> bool:
+    ok = True
+    try:
+        m = generar_menu("General", "Mediterránea", 2000)
+        assert isinstance(m, MenuSemanal) and len(m.plan) == 7
+        s = formatear_menu(m)
+        assert "Lunes" in s
 
-You'll see your new `*.edgecompute.app` address in the output. Open it in a new tab and tell everyone you know about your new site. 📣
+        assert clasificar_intencion(None) == "general"
+        assert clasificar_intencion("quiero un plan de dieta") == "menu"
+        assert clasificar_intencion("quiero bajar de peso") == "bajar"
 
-How does your site behave differently on the edge?
+        r = jugar_rps("Piedra")
+        assert "Tú:" in r and "IA:" in r
 
-<img src="https://github.com/user-attachments/assets/70355c6e-774a-4744-951b-1e30bd71486c" width="600px" alt="deployed app"/>
+        estado = EstadoNumero(objetivo=10, intentos=0)
+        estado, msg = intentar_numero(estado, 5)
+        assert "Muy bajo" in msg
+        estado, msg = intentar_numero(estado, 10)
+        assert "Correcto" in msg
 
-🎢 Whenever you update your app, hit the **🚀 Publish** button again to go live!
+        correct_option = TRIVIA[0][1][TRIVIA[0][2]]
+        assert responder_trivia(0, correct_option).startswith("✅")
+        assert responder_trivia(0, "respuesta equivocada").startswith("❌")
 
-## Save your edits to GitHub
+    except AssertionError as e:
+        print("[TEST FAILURE]:", e)
+        traceback.print_exc()
+        ok = False
+    except Exception as e:
+        print("[TEST ERROR]:", e)
+        traceback.print_exc()
+        ok = False
 
-GitHub will keep the edits you make in the codespace only for a limited time, so it's a good idea to commit your work to a repo regularly. Use the **Source Control** button on the left of the editor – you can make commits, open and merge pull requests right inside the codespace. 
+    print("Tests básicos:", "OK" if ok else "FALLÓ")
+    return ok
 
-<img alt="source control" src="https://github.com/user-attachments/assets/a5160b08-4f80-4a5f-af76-bde18a43427d" width="300px"/>
 
-> GitHub will notify you if any of your codespaces are about to expire. If you have changes you want to keep, you can use the **Export changes to a branch** option.
-> 
-> <img alt="export to branch" width="500px" src="https://github.com/user-attachments/assets/c7815347-3e5a-4e34-97f2-db58343acaa4"/>
+# ---------------- Interfaz: Gradio (si está disponible) ----------------
+if GRADIO_AVAILABLE:
+    with gr.Blocks(title="IA Salud + Distracción", theme=gr.themes.Soft()) as demo:
+        gr.Markdown("# 🤖 IA de Salud + 🎲 Menú de Distracción\n" + DISCLAIMER)
 
-## How this project works 
+        with gr.Tab("Chat Salud/Dietas"):
+            with gr.Row():
+                chat = gr.Chatbot(height=350)
+            with gr.Row():
+                mensaje = gr.Textbox(label="Escribe tu pregunta (salud/dietas)")
+            with gr.Row():
+                objetivo = gr.Dropdown(choices=OBJETIVOS, value="General", label="Objetivo")
+                tipo_dieta = gr.Dropdown(choices=TIPOS_DIETA, value="Balanceada", label="Tipo de dieta")
+                alergias = gr.Textbox(label="Alergias/intolerancias (opcional)")
+            enviar = gr.Button("Enviar")
+            estado_chat = gr.State([])
 
-⚙️ The settings we use to create the guided experience in the codespace are in the `.devcontainer/` folder.
+            enviar.click(
+                responder_salud,
+                inputs=[estado_chat, mensaje, objetivo, tipo_dieta, alergias],
+                outputs=[chat, estado_chat]
+            )
 
-🧰 You'll find the Fastly CLI commands we use under the hood in the `helpers/publish.sh` script.
+        with gr.Tab("Menú Semanal"):
+            gr.Markdown("Genera un menú de 7 días según tu objetivo y tipo de dieta.")
+            objetivo_m = gr.Dropdown(choices=OBJETIVOS, value="General", label="Objetivo")
+            tipo_m = gr.Dropdown(choices=TIPOS_DIETA, value="Balanceada", label="Tipo de dieta")
+            calorias = gr.Slider(1200, 3200, value=2000, step=100, label="Calorías aproximadas")
+            btn_menu = gr.Button("Generar menú")
+            salida_menu = gr.Markdown()
 
-💻 If you check the right-hand side of the **Terminal** you'll find multiple processes – this is to run the commands.
+            def _gen_menu(obj, tipo, kcal):
+                m = generar_menu(obj, tipo, int(kcal))
+                return formatear_menu(m)
 
-### Extensions
+            btn_menu.click(_gen_menu, inputs=[objetivo_m, tipo_m, calorias], outputs=[salida_menu])
 
-This project uses the following extensions from the dev community! 🙌
+        with gr.Tab("Distracción"):
+            gr.Markdown("Tómate un break ✨")
+            with gr.Row():
+                with gr.Column():
+                    gr.Markdown("### Chistes")
+                    btn_chiste = gr.Button("Contar chiste")
+                    out_chiste = gr.Textbox(label=" ", interactive=False)
+                    btn_chiste.click(lambda: random.choice(CHISTES), outputs=out_chiste)
 
-* [VSCode Action Buttons Ext](https://marketplace.visualstudio.com/items?itemName=jkearins.action-buttons-ext)
-* [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
+                with gr.Column():
+                    gr.Markdown("### Curiosidades")
+                    btn_cur = gr.Button("Dame una curiosidad")
+                    out_cur = gr.Textbox(label=" ", interactive=False)
+                    btn_cur.click(lambda: random.choice(CURIOSIDADES), outputs=out_cur)
 
-## Keep going! 🛸
+            gr.Markdown("---")
+            gr.Markdown("### Piedra, Papel o Tijera")
+            elec = gr.Radio(OPCIONES_RPS, value="Piedra", label="Tu jugada")
+            btn_rps = gr.Button("Jugar")
+            out_rps = gr.Textbox(label="Resultado", interactive=False)
+            btn_rps.click(jugar_rps, inputs=elec, outputs=out_rps)
 
-**Don't stop there, <a href="https://www.fastly.com/documentation/solutions/tutorials/deliver-your-site/#sending-domain-traffic-to-fastly" target="_blank">add a domain to your new site</a>.**
+            gr.Markdown("---")
+            gr.Markdown("### Adivina el número (1–50)")
+            estado_num = gr.State(EstadoNumero())
+            numero = gr.Number(value=25, precision=0, label="Tu intento")
+            btn_int = gr.Button("Probar")
+            btn_res = gr.Button("Reiniciar juego")
+            out_num = gr.Textbox(label="Pista", interactive=False)
 
-You'll find your service in your Fastly account control panel – check out the **Observability** stats! 📊
+            btn_int.click(intentar_numero, inputs=[estado_num, numero], outputs=[estado_num, out_num])
+            btn_res.click(lambda: (EstadoNumero(), "¡Listo! Nuevo número secreto."), outputs=[estado_num, out_num])
 
-What else can you build on Compute? Check out the [code examples](https://www.fastly.com/documentation/solutions/examples/) for inspiration.
+        gr.Markdown("---\nHecho con ❤️. Recuerda: la salud es integral: alimentación, movimiento, sueño y emociones.")
 
-You can also [clone the example website](https://github.com/glitchdotcom/compute-origin) and deploy it to GitHub Pages if you like by following the instructions in its README (make sure you update the `toml` and `index.js` `root` values in your clone of the Compute app).
+# ---------------- Interfaz: CLI fallback ----------------
 
-🛟 Get help on the <a href="https://community.fastly.com" target="_blank">community forum</a>.
+def cli_menu():
+    print("IA Salud + Distracción (modo CLI)")
+    estado_num = EstadoNumero()
+    chat_hist = []
+    while True:
+        print("\n--- Menú principal ---")
+        print("1) Chat salud/dietas")
+        print("2) Generar menú semanal")
+        print("3) Distracción")
+        print("4) Tests básicos")
+        print("5) Salir")
+        choice = input("Elige una opción: ").strip()
+        if choice == "1":
+            msg = input("Escribe tu pregunta (salud/dietas): ")
+            obj = input(f"Objetivo {OBJETIVOS} (enter para 'General'): ") or "General"
+            tipo = input(f"Tipo de dieta {TIPOS_DIETA} (enter para 'Balanceada'): ") or "Balanceada"
+            alerg = input("Alergias (opcional): ")
+            chat_hist, _ = responder_salud(chat_hist, msg, obj, tipo, alerg)
+            print("\n" + chat_hist[-1][1])
+        elif choice == "2":
+            obj = input(f"Objetivo {OBJETIVOS} (enter para 'General'): ") or "General"
+            tipo = input(f"Tipo de dieta {TIPOS_DIETA} (enter para 'Balanceada'): ") or "Balanceada"
+            kcal = input("Calorías aproximadas (enter para 2000): ") or "2000"
+            menu = generar_menu(obj, tipo, int(kcal))
+            print(formatear_menu(menu))
+        elif choice == "3":
+            while True:
+                print("\n-- Distracción --")
+                print("a) Chiste")
+                print("b) Curiosidad")
+                print("c) Piedra, Papel o Tijera")
+                print("d) Adivina el número")
+                print("e) Trivia")
+                print("z) Volver")
+                sub = input("Elige: ")
+                if sub == "a":
+                    print(random.choice(CHISTES))
+                elif sub == "b":
+                    print(random.choice(CURIOSIDADES))
+                elif sub == "c":
+                    jug = input(f"Tu jugada {OPCIONES_RPS}: ")
+                    print(jugar_rps(jug))
+                elif sub == "d":
+                    try:
+                        intento = int(input("Adivina (1-50): "))
+                    except Exception:
+                        print("Número inválido")
+                        continue
+                    estado_num, msg = intentar_numero(estado_num, intento)
+                    print(msg)
+                elif sub == "e":
+                    for i, t in enumerate(TRIVIA):
+                        print(i, t[0])
+                    idx = int(input("Elige pregunta (número): "))
+                    q, opts = pregunta_trivia(idx)
+                    print(q)
+                    for i, o in enumerate(opts):
+                        print(i + 1, o)
+                    sel = int(input("Elige opción (número): ")) - 1
+                    print(responder_trivia(idx, opts[sel]))
+                elif sub == "z":
+                    break
+                else:
+                    print("Opción no válida")
+        elif choice == "4":
+            run_basic_tests()
+        elif choice == "5":
+            print("¡Adiós!")
+            break
+        else:
+            print("Opción no válida.")
 
-<img src="https://github.com/user-attachments/assets/17a8af4a-100f-416d-a1cf-f84174262138" width="100px"/>
 
+if __name__ == "__main__":
+    if GRADIO_AVAILABLE:
+        print("Gradio cargado correctamente. Ejecutando la interfaz web...")
+        try:
+            demo.launch()
+        except Exception as e:
+            print("Error al lanzar Gradio:", e)
+            traceback.print_exc()
+            print("Iniciando modo CLI como fallback...")
+            cli_menu()
+    else:
+        print("Gradio no está disponible.")
+        print("Import error:", repr(GRADIO_IMPORT_ERROR))
+        print("Usando interfaz de línea de comandos (CLI). Si quieres la interfaz web, ejecuta este script en un entorno con 'gradio' y soporte SSL.")
+        cli_menu()
