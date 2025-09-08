@@ -1,0 +1,280 @@
+/*
+App Vendas - Restaurante (React + Tailwind)
+Single-file React component (default export) ready to paste into src/App.jsx
+
+Instruções rápidas de uso:
+1. Crie um projeto com Vite: `npm create vite@latest my-restaurant --template react`
+2. Entre na pasta e instale dependências: `cd my-restaurant && npm install`
+3. Configure Tailwind (siga a docs oficiais) ou use CDN no index.html para testes rápidos.
+4. Substitua src/App.jsx pelo conteúdo abaixo.
+5. Rode `npm run dev`.
+
+Notas:
+- Atualize `MAP_QUERY` com as coordenadas/endereço do seu restaurante para mostrar a localização correta.
+- Este exemplo usa dados locais (array `PRODUCTS`) e simula checkout.
+- Para pagamentos reais, integre Stripe/PayPal/MPesa conforme necessário.
+*/
+
+import React, { useEffect, useState } from 'react';
+
+// ------ Dados de exemplo ------
+const PRODUCTS = [
+  { id: 1, name: 'Frango Grelhado', price: 7.5, description: 'Peito de frango grelhado com ervas', image: '' },
+  { id: 2, name: 'Arroz de Coco', price: 3.0, description: 'Arroz preparado no leite de coco', image: '' },
+  { id: 3, name: 'Feijoada', price: 5.0, description: 'Feijoada tradicional', image: '' },
+  { id: 4, name: 'Salada Fresca', price: 2.5, description: 'Mix de folhas e vegetais da estação', image: '' },
+];
+
+const ADS = [
+  { id: 1, title: 'Promoção: 20% em combos', subtitle: 'Válido até domingo' },
+  { id: 2, title: 'Entrega grátis', subtitle: 'Para pedidos acima de 10$' },
+  { id: 3, title: 'Novo prato: Moamba', subtitle: 'Experimente hoje' },
+];
+
+// Substitua pelo seu endereço ou query do Google Maps (URL encode). Exemplo: 'Luanda,%20Angola'
+const MAP_QUERY = 'Luanda,%20Angola';
+
+// ------ Componentes ------
+function Header({ cartCount, openCart }) {
+  return (
+    <header className="bg-white shadow-md sticky top-0 z-20">
+      <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-orange-400 rounded-full flex items-center justify-center text-white font-bold">R</div>
+          <div>
+            <h1 className="text-lg font-semibold">Restaurante Rápido</h1>
+            <p className="text-xs text-slate-500">Comida caseira & entrega rápida</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button onClick={openCart} className="relative p-2 bg-slate-100 rounded-md">
+            🛒
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{cartCount}</span>
+            )}
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function AdCarousel() {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIndex(i => (i + 1) % ADS.length), 4000);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 mt-4">
+      <div className="rounded-2xl overflow-hidden shadow-md bg-gradient-to-r from-yellow-100 to-orange-50 p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-semibold">{ADS[index].title}</h3>
+            <p className="text-sm text-slate-600">{ADS[index].subtitle}</p>
+          </div>
+          <div className="text-4xl">📣</div>
+        </div>
+        <div className="flex gap-2 mt-3 justify-center">
+          {ADS.map((a, i) => (
+            <div key={a.id} className={`w-2 h-2 rounded-full ${i === index ? 'bg-slate-800' : 'bg-slate-300'}`}></div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProductCard({ item, addToCart }) {
+  return (
+    <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col">
+      <div className="h-36 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400">Imagem</div>
+      <h4 className="mt-3 font-semibold">{item.name}</h4>
+      <p className="text-sm text-slate-500">{item.description}</p>
+      <div className="mt-3 flex items-center justify-between">
+        <div className="text-lg font-bold">${item.price.toFixed(2)}</div>
+        <button onClick={() => addToCart(item)} className="px-3 py-1 rounded-lg bg-slate-900 text-white">Adicionar</button>
+      </div>
+    </div>
+  );
+}
+
+function MapLocation() {
+  const src = `https://www.google.com/maps?q=${MAP_QUERY}&output=embed`;
+  return (
+    <div className="max-w-4xl mx-auto px-4 mt-6">
+      <h3 className="font-semibold mb-2">Localização</h3>
+      <div className="rounded-lg overflow-hidden shadow-md">
+        <iframe
+          title="mapa-restaurante"
+          src={src}
+          className="w-full h-64 border-0"
+          allowFullScreen
+          loading="lazy"
+        ></iframe>
+      </div>
+    </div>
+  );
+}
+
+function CartModal({ open, close, cartItems, updateQty, clearCart, onCheckout }) {
+  const total = cartItems.reduce((s, c) => s + c.price * c.qty, 0);
+  return (
+    <div className={`${open ? 'fixed' : 'hidden'} inset-0 z-30 flex items-end sm:items-center justify-center`}> 
+      <div className="absolute inset-0 bg-black/40" onClick={close}></div>
+      <div className="relative bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-4"> 
+        <h3 className="text-lg font-semibold">Carrinho</h3>
+        <div className="mt-3 space-y-2 max-h-60 overflow-auto">
+          {cartItems.length === 0 && <p className="text-sm text-slate-500">Carrinho vazio</p>}
+          {cartItems.map(ci => (
+            <div key={ci.id} className="flex items-center justify-between">
+              <div>
+                <div className="font-semibold">{ci.name}</div>
+                <div className="text-sm text-slate-500">${ci.price.toFixed(2)}</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => updateQty(ci.id, ci.qty - 1)} className="px-2 py-1 bg-slate-100 rounded">-</button>
+                <div className="w-6 text-center">{ci.qty}</div>
+                <button onClick={() => updateQty(ci.id, ci.qty + 1)} className="px-2 py-1 bg-slate-100 rounded">+</button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 flex items-center justify-between">
+          <div className="font-bold">Total: ${total.toFixed(2)}</div>
+          <div className="flex items-center gap-2">
+            <button onClick={clearCart} className="px-3 py-1 rounded-md bg-red-500 text-white">Limpar</button>
+            <button onClick={onCheckout} className="px-3 py-1 rounded-md bg-green-600 text-white">Finalizar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CheckoutForm({ cartItems, onComplete }) {
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const total = cartItems.reduce((s, c) => s + c.price * c.qty, 0);
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    // Simula verificação e pagamento
+    const order = {
+      id: Date.now(),
+      customer: { name, phone, address },
+      items: cartItems,
+      total,
+      createdAt: new Date().toISOString(),
+    };
+    // normalmente aqui você chamaria sua API
+    console.log('Pedido:', order);
+    onComplete(order);
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 mt-6">
+      <h3 className="font-semibold mb-2">Finalizar pedido</h3>
+      <form onSubmit={handleSubmit} className="bg-white p-4 rounded-2xl shadow-sm">
+        <div className="grid gap-3">
+          <input required value={name} onChange={e=>setName(e.target.value)} placeholder="Nome" className="p-2 border rounded" />
+          <input required value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Telefone" className="p-2 border rounded" />
+          <input required value={address} onChange={e=>setAddress(e.target.value)} placeholder="Endereço para entrega" className="p-2 border rounded" />
+          <div className="font-bold">Total a pagar: ${total.toFixed(2)}</div>
+          <button type="submit" className="py-2 rounded-lg bg-blue-600 text-white">Confirmar pedido</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ------ App principal ------
+export default function App() {
+  const [cart, setCart] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cart_v1')) || []; } catch { return []; }
+  });
+  const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [orders, setOrders] = useState([]);
+
+  useEffect(() => { localStorage.setItem('cart_v1', JSON.stringify(cart)); }, [cart]);
+
+  function addToCart(item) {
+    setCart(prev => {
+      const exists = prev.find(p => p.id === item.id);
+      if (exists) return prev.map(p => p.id === item.id ? { ...p, qty: p.qty + 1 } : p);
+      return [...prev, { ...item, qty: 1 }];
+    });
+  }
+
+  function updateQty(id, qty) {
+    setCart(prev => prev.map(p => p.id === id ? { ...p, qty: Math.max(0, qty) } : p).filter(p => p.qty > 0));
+  }
+
+  function clearCart() { setCart([]); }
+
+  function handleCheckout() {
+    setCartOpen(false);
+    setCheckoutOpen(true);
+  }
+
+  function onOrderComplete(order) {
+    setOrders(prev => [order, ...prev]);
+    setCart([]);
+    setCheckoutOpen(false);
+    alert('Pedido recebido! ID: ' + order.id);
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 pb-12">
+      <Header cartCount={cart.reduce((s,c)=>s+c.qty,0)} openCart={()=>setCartOpen(true)} />
+
+      <main className="pt-4">
+        <AdCarousel />
+
+        <section className="max-w-4xl mx-auto px-4 mt-6">
+          <h2 className="text-xl font-semibold mb-3">Cardápio</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {PRODUCTS.map(p => (
+              <ProductCard key={p.id} item={p} addToCart={addToCart} />
+            ))}
+          </div>
+        </section>
+
+        <MapLocation />
+
+        {checkoutOpen && <CheckoutForm cartItems={cart} onComplete={onOrderComplete} />}
+
+        <section className="max-w-4xl mx-auto px-4 mt-6 mb-12">
+          <h3 className="font-semibold mb-2">Pedidos recentes (simulados)</h3>
+          <div className="space-y-3">
+            {orders.length === 0 && <p className="text-sm text-slate-500">Nenhum pedido ainda</p>}
+            {orders.map(o => (
+              <div key={o.id} className="bg-white p-3 rounded-lg shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>ID {o.id}</div>
+                  <div className="text-sm text-slate-500">{new Date(o.createdAt).toLocaleString()}</div>
+                </div>
+                <div className="mt-2 text-sm">Cliente: {o.customer.name} — {o.customer.phone}</div>
+                <div className="mt-1 text-sm">Total: ${o.total.toFixed(2)}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </main>
+
+      <CartModal
+        open={cartOpen}
+        close={() => setCartOpen(false)}
+        cartItems={cart}
+        updateQty={updateQty}
+        clearCart={clearCart}
+        onCheckout={handleCheckout}
+      />
+    </div>
+  );
+}
+
