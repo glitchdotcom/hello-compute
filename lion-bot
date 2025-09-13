@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>🦁 Lion Fire Trading Bot</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body { font-family:'Segoe UI',sans-serif; margin:0; padding:0; background:#0b0b0b; color:#fff; }
+header { text-align:center; padding:20px; background:linear-gradient(90deg,#f97316,#ef4444,#facc15); font-size:24px; font-weight:bold; text-shadow:0 0 5px #fff; }
+.container { max-width:960px; margin:auto; padding:20px; display:grid; grid-template-columns:1fr 1fr; gap:15px; }
+.card { background:#1f2937; border-radius:12px; padding:20px; box-shadow:0 0 15px rgba(255,140,0,0.4); }
+h2 { color:#fbbf24; margin-bottom:10px; }
+input, select, button { width:100%; margin:5px 0; padding:10px; border:none; border-radius:10px; font-size:14px; }
+button { background:#f97316; color:#fff; font-weight:bold; cursor:pointer; transition:0.3s; }
+button:hover { background:#ef4444; }
+.balance { font-size:26px; font-weight:bold; margin:10px 0; color:#facc15; text-align:center; text-shadow:0 0 5px #fff; }
+table { width:100%; border-collapse:collapse; font-size:14px; margin-top:10px; }
+th, td { padding:8px; border-bottom:1px solid #374151; text-align:center; }
+canvas { max-height:220px; margin-top:10px; border-radius:12px; background:#f1f5f9; }
+.actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.actions button { flex:1; }
+@media(max-width:768px){ .container{grid-template-columns:1fr;} header{font-size:20px;} }
+</style>
+</head>
+<body>
+<header>🦁 Lion Fire Trading Bot</header>
+<div class="container">
+<div class="card">
+<h2>⚙ Settings</h2>
+<label>Start Amount:</label><input type="number" id="startAmount" value="100">
+<label>Target Amount (optional):</label><input type="number" id="targetAmount" placeholder="Leave empty for nonstop">
+<label>Market:</label>
+<select id="marketChoice">
+  <option value="crypto">Crypto</option>
+</select>
+<label>Strategy:</label>
+<select id="strategyChoice">
+  <option value="custom">Custom Growth</option>
+  <option value="auto">Bot Auto Strategy</option>
+</select>
+<label>Custom Growth % per minute:</label><input type="number" id="customGrowth" value="2">
+<label>Save %:</label><input type="number" id="savePct" value="20">
+<label>Spend %:</label><input type="number" id="spendPct" value="20">
+<label>Reinvest %:</label><input type="number" id="reinvestPct" value="60">
+<div class="actions">
+  <button onclick="startBot()">▶ Start</button>
+  <button onclick="stopBot()">⏹ Stop</button>
+  <button onclick="resetBot()">🔄 Reset</button>
+</div>
+</div>
+
+<div class="card">
+<h2>💰 Balance & Charts</h2>
+<div class="balance" id="balance">100</div>
+<canvas id="lineChart"></canvas>
+<canvas id="pieChart"></canvas>
+</div>
+
+<div class="card" style="grid-column: span 2;">
+<h2>📜 Trading History</h2>
+<table>
+  <thead><tr><th>Minute</th><th>Profit</th><th>Balance</th></tr></thead>
+  <tbody id="historyTable"></tbody>
+</table>
+</div>
+</div>
+
+<script>
+let balance=100, history=[], timer=null, minute=0;
+
+const lineChart = new Chart(document.getElementById("lineChart"), {
+  type:'line',
+  data:{labels:[], datasets:[{label:'Balance', data:[], borderColor:'#facc15', borderWidth:2}]},
+  options:{responsive:true}
+});
+const pieChart = new Chart(document.getElementById("pieChart"), {
+  type:'pie',
+  data:{labels:['Save','Spend','Reinvest'], datasets:[{data:[20,20,60], backgroundColor:['#3b82f6','#ef4444','#22c55e']}]},
+  options:{responsive:true}
+});
+
+function simulateProfit(){
+  const growth = parseFloat(document.getElementById("customGrowth").value);
+  return balance*(growth/100);
+}
+
+function startBot(){
+  if(timer) return;
+  let startAmt=parseFloat(document.getElementById("startAmount").value);
+  let targetAmt=parseFloat(document.getElementById("targetAmount").value);
+  let savePct=parseFloat(document.getElementById("savePct").value);
+  let spendPct=parseFloat(document.getElementById("spendPct").value);
+  let reinvestPct=parseFloat(document.getElementById("reinvestPct").value);
+
+  balance=startAmt;
+  pieChart.data.datasets[0].data=[savePct,spendPct,reinvestPct];
+  pieChart.update();
+
+  timer=setInterval(async ()=>{
+    if(targetAmt && balance>=targetAmt){ stopBot(); alert("Target Reached"); return; }
+
+    // 🔹 Real API call placeholder (use Node.js backend for real trading)
+    // Example: let profit = await fetch('https://your-backend.com/trade?market=crypto')
+    //                .then(res=>res.json()).then(data=>data.profit);
+    let profit=simulateProfit(); 
+
+    balance += profit*(reinvestPct/100);
+
+    history.push({minute, profit, balance});
+    document.getElementById("balance").innerText=balance.toFixed(2);
+    lineChart.data.labels.push(minute);
+    lineChart.data.datasets[0].data.push(balance);
+    lineChart.update();
+    document.getElementById("historyTable").innerHTML += `<tr><td>${minute}</td><td>${profit.toFixed(2)}</td><td>${balance.toFixed(2)}</td></tr>`;
+    minute++;
+  },1000);
+}
+
+function stopBot(){ clearInterval(timer); timer=null; }
+function resetBot(){ stopBot(); balance=parseFloat(document.getElementById("startAmount").value); minute=0; history=[]; lineChart.data.labels=[]; lineChart.data.datasets[0].data=[]; lineChart.update(); document.getElementById("historyTable").innerHTML=""; }
+</script>
+</body>
+</html>
