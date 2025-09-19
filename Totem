@@ -1,0 +1,126 @@
+<!DOCTYPE html><html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Totem Touch - Windsor Hotéis</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #ffffff;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      padding: 20px;
+      border: 3px solid #004080;
+      border-radius: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+    h1 {
+      color: #004080;
+      margin-bottom: 20px;
+    }
+    button {
+      background-color: #d4af37;
+      color: #fff;
+      font-size: 1.2em;
+      padding: 15px 20px;
+      border: none;
+      border-radius: 10px;
+      margin: 10px 0;
+      width: 100%;
+      cursor: pointer;
+    }
+    .hidden {
+      display: none;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="telaInicial">
+    <h1>Windsor Hotéis</h1>
+    <button onclick="abrirTela('checkin')">Check-in</button>
+    <button onclick="abrirTela('checkout')">Check-out</button>
+  </div>  <div class="container hidden" id="checkin">
+    <h1>Check-in</h1>
+    <input type="text" id="cpf" placeholder="Digite seu CPF">
+    <button onclick="verificarCadastro()">Localizar Reserva</button>
+    <button onclick="abrirTela('telaInicial')">Voltar</button>
+  </div>  <div class="container hidden" id="cadastro">
+    <h1>Cadastro</h1>
+    <input type="text" placeholder="CPF" required>
+    <input type="text" placeholder="Nome Completo" required>
+    <input type="email" placeholder="E-mail" required>
+    <input type="text" placeholder="Telefone" required>
+    <input type="number" placeholder="Número de acompanhantes">
+    <button onclick="abrirTela('servicos')">Confirmar Cadastro</button>
+  </div>  <div class="container hidden" id="servicos">
+    <h1>Serviços</h1>
+    <label><input type="checkbox"> Café da Manhã Incluso</label><br>
+    <label><input type="checkbox"> Almoço</label><br>
+    <label><input type="checkbox"> Jantar</label><br>
+    <label><input type="checkbox"> SPA</label><br>
+    <label><input type="checkbox"> Lavanderia</label><br>
+    <label><input type="checkbox"> Academia</label><br>
+    <label><input type="checkbox"> Late Checkout</label><br>
+    <button onclick="abrirTela('pagamento')">Continuar</button>
+  </div>  <div class="container hidden" id="pagamento">
+    <h1>Pagamento</h1>
+    <button onclick="abrirTela('liberacao')">Cartão de Crédito</button>
+    <button onclick="abrirTela('liberacao')">Cartão de Débito</button>
+    <button onclick="abrirTela('liberacao')">Pix</button>
+  </div>  <div class="container hidden" id="liberacao">
+    <h1>✅ Pagamento Aprovado!</h1>
+    <p>Seu cartão-chave foi liberado.</p>
+    <button onclick="abrirTela('telaInicial')">Voltar à tela inicial</button>
+  </div>  <div class="container hidden" id="checkout">
+    <h1>Check-out</h1>
+    <input type="text" placeholder="Digite seu CPF ou Nº do Quarto">
+    <button onclick="abrirTela('resumoCheckout')">Confirmar</button>
+    <button onclick="abrirTela('telaInicial')">Voltar</button>
+  </div>  <div class="container hidden" id="resumoCheckout">
+    <h1>Resumo da Conta</h1>
+    <p>Diárias + serviços extras</p>
+    <button onclick="abrirTela('liberacaoCheckout')">Realizar Pagamento Final</button>
+  </div>  <div class="container hidden" id="liberacaoCheckout">
+    <h1>✅ Check-out Concluído!</h1>
+    <p>Obrigado por se hospedar conosco.</p>
+    <button onclick="abrirTela('telaInicial')">Voltar à tela inicial</button>
+  </div>  <script>
+    function abrirTela(id) {
+      document.querySelectorAll('.container').forEach(div => div.classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function verificarCadastro() {
+      const cpf = document.getElementById('cpf').value;
+      if (cpf === "") {
+        alert("Por favor, digite o CPF");
+        return;
+      }
+      // Simulação: se CPF terminar em número par -> já cadastrado, senão -> novo cadastro
+      const ultimo = parseInt(cpf.slice(-1));
+      if (!isNaN(ultimo) && ultimo % 2 === 0) {
+        abrirTela('servicos');
+      } else {
+        abrirTela('cadastro');
+      }
+    }
+  </script></body>
+</html>
